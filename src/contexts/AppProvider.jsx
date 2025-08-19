@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createContext } from "react";
 
-export const ThemeContext = createContext();
+export const AppContext = createContext();
 
 const AppProvider = ({ children }) => {
+  // Theme Context.
   const [lightTheme, setLightTheme] = useState(() => {
     const saved = localStorage.getItem("LMS-Theme");
     return saved ? saved === "light" : false;
@@ -17,10 +18,22 @@ const AppProvider = ({ children }) => {
       return newTheme;
     });
   };
+
+  // Sidebar Open State.
+  const [open, setOpen] = useState(() => {
+    const saved = localStorage.getItem("LMS-Sidebar");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  // Local Storage of Sidebar.
+  useEffect(() => {
+    localStorage.setItem("LMS-Sidebar", JSON.stringify(open));
+  }, [open]);
+
   return (
-    <ThemeContext.Provider value={{ lightTheme, toggleTheme }}>
+    <AppContext.Provider value={{ lightTheme, toggleTheme, open, setOpen }}>
       {children}
-    </ThemeContext.Provider>
+    </AppContext.Provider>
   );
 };
 
