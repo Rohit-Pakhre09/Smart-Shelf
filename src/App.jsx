@@ -1,7 +1,5 @@
 import { useContext } from "react";
 import Sidebar from "./components/Sidebar";
-import { ThemeContext } from "./contexts/AppProvider";
-import BookCard from "./components/BookCard";
 import { AppContext } from "./contexts/AppProvider";
 import Navbar from "./components/Navbar";
 
