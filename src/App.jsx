@@ -7,6 +7,8 @@ const App = () => {
   const { lightTheme } = useContext(AppContext);
   return (
     <main
+
+     
       className={`min-h-screen flex items-center ${
         lightTheme ? "bg-gray-900/90" : "bg-gray-200/70"
       } transition-all duration-300 ease-in-out`}
@@ -15,7 +17,7 @@ const App = () => {
         <Sidebar />
         <Navbar />
       </section>
-    </main>
+   </main>
   );
 };
 
