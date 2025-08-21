@@ -127,10 +127,10 @@ const Sidebar = () => {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`fixed top-0 left-2 h-[97vh] rounded-xl 
+        className={`fixed top-2 left-2 h-[98vh] rounded-xl 
     ${open ? "w-64" : "w-20"} 
     ${lightTheme ? "bg-gray-900" : "bg-neutral-50"}
-    text-white transition-all duration-500 relative flex flex-col justify-between invisible opacity-0 lg:visible lg:opacity-100`}
+    text-white transition-all duration-500 ease-in-out relative flex flex-col justify-between invisible opacity-0 lg:visible lg:opacity-100 shadow-lg`}
       >
         {/* Top section */}
         <div>

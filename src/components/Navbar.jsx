@@ -25,10 +25,10 @@ const Navbar = () => {
     <>
       {/* Desktop Navbar */}
       <nav
-        className={`fixed top-3.5 left-4 right-0 z-40 flex items-center justify-between 
-    h-20 pr-4 rounded-xl transition-all duration-500 ease-in-out
+        className={`fixed top-2.5 left-7 right-0 z-40 flex items-center justify-between 
+    h-20 pr-4 rounded-xl transition-all duration-500 ease-in-out shadow-lg
     ${lightTheme ? "bg-gray-900 text-white" : "text-black bg-neutral-50"}
-    ${open ? "ml-64 w-[calc(100%-18rem)]" : "ml-20 w-[calc(100%-7rem)]"}
+    ${open ? "ml-64 w-[calc(100%-19rem)]" : "ml-20 w-[calc(100%-8rem)]"}
     hidden lg:flex
     ${open ? "opacity-100 translate-y-0" : "opacity-100 translate-y-0"} 
   `}
@@ -130,7 +130,7 @@ const Navbar = () => {
     transition-all duration-500 ease-in-out
     lg:hidden
     ${lightTheme ? "bg-gray-900 text-white" : "bg-neutral-50 text-black"}
-  `}
+  shadow-lg`}
       >
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -142,16 +142,14 @@ const Navbar = () => {
             {/* Icon */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
               viewBox="0 0 24 24"
-              stroke="currentColor"
+              fill="currentColor"
+              className="size-6"
             >
               <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
+                fillRule="evenodd"
+                d="M3 6.75A.75.75 0 0 1 3.75 6h16.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 6.75ZM3 12a.75.75 0 0 1 .75-.75h16.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 12Zm0 5.25a.75.75 0 0 1 .75-.75H12a.75.75 0 0 1 0 1.5H3.75a.75.75 0 0 1-.75-.75Z"
+                clipRule="evenodd"
               />
             </svg>
           </button>
