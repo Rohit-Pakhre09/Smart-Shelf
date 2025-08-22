@@ -1,5 +1,6 @@
 import { useContext } from "react";
 import { AppContext } from "../contexts/AppProvider";
+import { NavLink } from "react-router-dom";
 
 const Sidebar = () => {
   const { open, lightTheme, setOpen } = useContext(AppContext);
@@ -8,6 +9,7 @@ const Sidebar = () => {
   const mainMenus = [
     {
       name: "Dashboard",
+      path: "/",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -25,6 +27,7 @@ const Sidebar = () => {
     },
     {
       name: "Books",
+      path: "/books",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -44,6 +47,7 @@ const Sidebar = () => {
     },
     {
       name: "Members",
+      path: "/members",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -63,6 +67,7 @@ const Sidebar = () => {
     },
     {
       name: "Borrowed Books",
+      path: "/borrowedbooks",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -85,6 +90,7 @@ const Sidebar = () => {
     },
     {
       name: "Requests",
+      path: "/request",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -106,6 +112,7 @@ const Sidebar = () => {
   const bottomMenu = [
     {
       name: "Account",
+      path: "/account",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -147,9 +154,7 @@ const Sidebar = () => {
             >
               Smart{" "}
               <span
-                className={`${
-                  lightTheme ? "text-blue-600" : "text-black"
-                } transition-all duration-500 ease-in-out`}
+                className={`text-blue-600 transition-all duration-500 ease-in-out`}
               >
                 Shelf
               </span>
@@ -186,14 +191,20 @@ const Sidebar = () => {
           {/* Main menu items */}
           <nav className="mt-5">
             {mainMenus.map((menu, index) => (
-              <div
+              <NavLink
                 key={index}
+                to={menu.path}
                 title={menu.name}
-                className={`flex items-center gap-4 px-5 py-3 mt-3 cursor-pointer ${
-                  lightTheme
-                    ? "hover:bg-gray-800"
-                    : "hover:bg-neutral-300 hover:text-black text-black"
-                } transition-all duration-300 ease-in rounded-md m-2`}
+                className={({ isActive }) =>
+                  `flex items-center gap-4 px-5 py-3 mt-3 rounded-md m-2 transition-all duration-300 ease-in cursor-pointer
+        ${
+          isActive
+            ? "bg-blue-600 text-white" 
+            : lightTheme
+            ? "hover:bg-gray-800"
+            : "hover:bg-neutral-300 hover:text-black text-black"
+        }`
+                }
               >
                 <div className="transition-transform duration-500 ease-in-out">
                   {menu.icon}
@@ -205,7 +216,7 @@ const Sidebar = () => {
                 >
                   {menu.name}
                 </span>
-              </div>
+              </NavLink>
             ))}
           </nav>
         </div>
@@ -213,14 +224,19 @@ const Sidebar = () => {
         {/* Bottom Menu Item */}
         <div className="mb-5">
           {bottomMenu.map((menu, index) => (
-            <div
+            <NavLink
               key={index}
+              to={menu.path}
               title={menu.name}
-              className={`flex items-center gap-4 px-6 py-3 cursor-pointer ${
-                lightTheme
-                  ? "hover:bg-gray-800"
-                  : "hover:bg-neutral-300 hover:text-black text-black"
-              } transition-all duration-300 ease-in rounded-md m-2`}
+              className={({ isActive }) =>
+                `flex items-center gap-4 px-6 py-3 cursor-pointer rounded-md m-2 transition-all duration-300 ease-in
+      ${
+        lightTheme
+          ? "hover:bg-gray-800"
+          : "hover:bg-neutral-300 hover:text-black text-black"
+      }
+      ${isActive ? "bg-indigo-500 text-white" : ""}`
+              }
             >
               {menu.icon}
               {/* Only show name if sidebar is open */}
@@ -229,7 +245,7 @@ const Sidebar = () => {
                   {menu.name}
                 </span>
               )}
-            </div>
+            </NavLink>
           ))}
 
           {/* LMS copyright */}

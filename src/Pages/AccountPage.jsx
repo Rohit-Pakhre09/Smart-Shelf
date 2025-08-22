@@ -4,7 +4,7 @@ import Sidebar from "../components/Sidebar";
 import { AppContext } from "../contexts/AppProvider";
 import Footer from "../components/Footer";
 
-const RequestBooks = () => {
+const AccountPage = () => {
   const { lightTheme, open } = useContext(AppContext);
   return (
     <section className="flex min-h-screen">
@@ -31,7 +31,7 @@ const RequestBooks = () => {
                 lightTheme ? "text-white" : "text-black"
               } text-3xl pb-3 mt-5 pl-5 font-bold animation transition-all duration-500`}
             >
-              Requested Books
+              Account Management
             </p>
 
             <div className="min-h-full flex flex-col gap-5 p-3"></div>
@@ -45,4 +45,4 @@ const RequestBooks = () => {
   );
 };
 
-export default RequestBooks;
+export default AccountPage;
