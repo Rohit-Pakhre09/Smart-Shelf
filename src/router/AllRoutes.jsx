@@ -6,6 +6,7 @@ import MemberManagement from "../Pages/MemberManagement";
 import BorrowedBooks from "../Pages/BorrowedBooks";
 import RequestBooks from "../Pages/RequestBooks";
 import ErrorPage from "../Pages/ErrorPage";
+import AccountPage from "../Pages/AccountPage"
 
 const paths = [
   { path: "/login", element: <LoginPage /> },
@@ -14,6 +15,7 @@ const paths = [
   { path: "/members", element: <MemberManagement /> },
   { path: "/borrowedbooks", element: <BorrowedBooks /> },
   { path: "/request", element: <RequestBooks /> },
+  { path: "/account", element: <AccountPage /> },
   { path: "*", element: <ErrorPage /> },
 ];
 

@@ -1,6 +1,7 @@
 // Navbar.jsx
 import { useContext } from "react";
 import { AppContext } from "../contexts/AppProvider";
+import { NavLink } from "react-router-dom";
 
 // Import Heroicons (outline style)
 import {
@@ -20,6 +21,106 @@ const Navbar = () => {
   useEffect(() => {
     localStorage.setItem("LMS-MobileMenu", JSON.stringify(mobileMenu));
   }, [mobileMenu]);
+
+  // Menu List
+  const menus = [
+    {
+      name: "Dashboard",
+      path: "/",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path d="M3 12l9-9 9 9M4 10v10h16V10" />
+        </svg>
+      ),
+    },
+    {
+      name: "Books",
+      path: "/books",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="size-6"
+        >
+          <path d="M11.25 4.533A9.707 9.707 0 0 0 6 3a9.735 9.735 0 0 0-3.25.555.75.75 0 0 0-.5.707v14.25a.75.75 0 0 0 1 .707A8.237 8.237 0 0 1 6 18.75c1.995 0 3.823.707 5.25 1.886V4.533ZM12.75 20.636A8.214 8.214 0 0 1 18 18.75c.966 0 1.89.166 2.75.47a.75.75 0 0 0 1-.708V4.262a.75.75 0 0 0-.5-.707A9.735 9.735 0 0 0 18 3a9.707 9.707 0 0 0-5.25 1.533v16.103Z" />
+        </svg>
+      ),
+    },
+    {
+      name: "Members",
+      path: "/members",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path d="M17 20h5v-2a4 4 0 0 0-5-4M9 20H4v-2a4 4 0 0 1 5-4m3-4a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
+        </svg>
+      ),
+    },
+    {
+      name: "Borrowed",
+      path: "/borrowedbooks",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path d="M9 12h6M9 16h6M5 20h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />
+        </svg>
+      ),
+    },
+    {
+      name: "Request",
+      path: "/request",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path d="M12 20h9" />
+          <path d="M12 4h9" />
+          <path d="M4 9h16M4 15h16" />
+        </svg>
+      ),
+    },
+    {
+      name: "Account",
+      path: "/account",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path d="M5.121 17.804A10.97 10.97 0 0 1 12 15c2.386 0 4.577.832 6.879 2.804M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+        </svg>
+      ),
+    },
+  ];
 
   return (
     <>
@@ -107,7 +208,9 @@ const Navbar = () => {
           <div className="flex items-center gap-2">
             <p
               className={`font-bold px-4 py-3 rounded-md ${
-                lightTheme ? "bg-gray-800" : "bg-neutral-200 text-black"
+                lightTheme
+                  ? "bg-gray-800"
+                  : "bg-indigo-500 text-neutral-50 shadow-sm"
               } transition-all duration-500 ease-in-out`}
             >
               {" "}
@@ -197,7 +300,7 @@ const Navbar = () => {
       </nav>
 
       {/* Mobile Sidebar */}
-      <div className="visible block lg:hidden opacity-100 lg:opacity-0 transition-all duration-500 ease-in-out">
+      <div className="visible block lg:hidden opacity-100 lg:opacity-0 transition-all duration-500 ease-in-out h-full">
         {/* Backdrop */}
         <div
           className={`fixed inset-0 bg-black/50 z-50 transition-opacity duration-500 ease-in-out ${
@@ -236,109 +339,31 @@ const Navbar = () => {
           </div>
 
           {/* Sidebar Links */}
-          <ul className="px-4 py-3 space-y-2">
-            {[
-              {
-                name: "Dashboard",
-                icon: (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path d="M3 12l9-9 9 9M4 10v10h16V10" />
-                  </svg>
-                ),
-              },
-              {
-                name: "Books",
-                icon: (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="size-6"
-                  >
-                    <path d="M11.25 4.533A9.707 9.707 0 0 0 6 3a9.735 9.735 0 0 0-3.25.555.75.75 0 0 0-.5.707v14.25a.75.75 0 0 0 1 .707A8.237 8.237 0 0 1 6 18.75c1.995 0 3.823.707 5.25 1.886V4.533ZM12.75 20.636A8.214 8.214 0 0 1 18 18.75c.966 0 1.89.166 2.75.47a.75.75 0 0 0 1-.708V4.262a.75.75 0 0 0-.5-.707A9.735 9.735 0 0 0 18 3a9.707 9.707 0 0 0-5.25 1.533v16.103Z" />
-                  </svg>
-                ),
-              },
-              {
-                name: "Members",
-                icon: (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path d="M17 20h5v-2a4 4 0 0 0-5-4M9 20H4v-2a4 4 0 0 1 5-4m3-4a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
-                  </svg>
-                ),
-              },
-              {
-                name: "Borrowed",
-                icon: (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path d="M9 12h6M9 16h6M5 20h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />
-                  </svg>
-                ),
-              },
-              {
-                name: "Request",
-                icon: (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path d="M12 20h9" />
-                    <path d="M12 4h9" />
-                    <path d="M4 9h16M4 15h16" />
-                  </svg>
-                ),
-              },
-              {
-                name: "Account",
-                icon: (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path d="M5.121 17.804A10.97 10.97 0 0 1 12 15c2.386 0 4.577.832 6.879 2.804M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
-                  </svg>
-                ),
-              },
-            ].map((item, index) => (
-              <li
-                key={index}
-                className="flex items-center gap-3 hover:bg-gray-800 py-3 px-2 cursor-pointer rounded-md transition"
-              >
-                {item.icon}
-                <span>{item.name}</span>
+          <ul className={`px-4 py-3 space-y-2 transition-all duration-300`}>
+            {menus.map((menu, index) => (
+              <li key={index}>
+                <NavLink
+                  to={menu.path}
+                  onClick={() => setOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 py-3 px-2 rounded-md transition cursor-pointer 
+        ${
+          isActive
+            ? lightTheme
+              ? "bg-gray-800 text-white font-semibold"
+              : "bg-neutral-300 text-black font-semibold"
+            : lightTheme
+            ? "hover:bg-gray-800 hover:text-white"
+            : "hover:bg-neutral-300 hover:text-black"
+        }`
+                  }
+                >
+                  {menu.icon}
+                  <span>{menu.name}</span>
+                </NavLink>
               </li>
             ))}
           </ul>
-
           <p
             className={`text-[10px] text-center w-full 
     ${lightTheme ? "text-neutral-200" : "text-gray-400"} 
