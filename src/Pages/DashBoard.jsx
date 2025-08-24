@@ -34,8 +34,8 @@ ChartJS.register(
 );
 
 // URL's
-const booksUrl = "https://smart-shelf-server.onrender.com/books";
-const memebersUrl = "https://smart-shelf-server.onrender.com/members";
+const booksUrl = "https://smart-shelf-server-qm2u.onrender.com/books";
+const memebersUrl = "https://smart-shelf-server-qm2u.onrender.com/members";
 
 const DashBoard = () => {
   const { lightTheme, open } = useContext(AppContext);
