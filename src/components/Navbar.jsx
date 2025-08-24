@@ -300,7 +300,7 @@ const Navbar = () => {
       </nav>
 
       {/* Mobile Sidebar */}
-      <div className="visible block lg:hidden opacity-100 lg:opacity-0 transition-all duration-500 ease-in-out h-full">
+      <div className="visible block lg:hidden opacity-100 lg:opacity-0 transition-all duration-500 ease-in-out h-auto mb-20">
         {/* Backdrop */}
         <div
           className={`fixed inset-0 bg-black/50 z-50 transition-opacity duration-500 ease-in-out ${

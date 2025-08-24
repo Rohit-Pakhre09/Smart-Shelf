@@ -17,6 +17,10 @@ import {
 import Footer from "../components/Footer";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import growingChart from "../assets/barChartFallback.svg";
+import pieChart from "../assets/pieChartFallBack.svg";
+import booksFallback from "../assets/booksFallback.svg";
+import membersFallback from "../assets/membersFallback.svg";
 
 // Register Chart.js components
 ChartJS.register(
@@ -29,6 +33,10 @@ ChartJS.register(
   Legend
 );
 
+// URL's
+const booksUrl = "https://smart-shelf-server.onrender.com/books";
+const memebersUrl = "https://smart-shelf-server.onrender.com/members";
+
 const DashBoard = () => {
   const { lightTheme, open } = useContext(AppContext);
   const [books, setBooks] = useState([]);
@@ -38,9 +46,7 @@ const DashBoard = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const res = await axios.get(
-          "https://smart-shelf-server.onrender.com/books"
-        );
+        const res = await axios.get(booksUrl);
         setBooks(res.data);
       } catch (err) {
         console.error("Error fetching books:", err);
@@ -54,9 +60,7 @@ const DashBoard = () => {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const res = await axios.get(
-          "https://smart-shelf-server.onrender.com/members"
-        );
+        const res = await axios.get(memebersUrl);
         setMembers(res.data);
       } catch (err) {
         console.error("Error fetching members:", err);
@@ -82,7 +86,7 @@ const DashBoard = () => {
         data: topBooks.map((b) => b.popularity),
         backgroundColor: "rgba(99, 102, 241, 0.7)", // Indigo
         borderRadius: 8,
-        fullTitles: topBooks.map((b) => b.title), 
+        fullTitles: topBooks.map((b) => b.title),
       },
     ],
   };
@@ -143,13 +147,37 @@ const DashBoard = () => {
   };
 
   // Stats Calculation
-  const totalBooks = books.length;
+  const totalBooks = books.length || (
+    <span className="inline-flex space-x-1">
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce"></span>
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+    </span>
+  );
   const borrowedBooks = books.filter((b) => b.status === "borrowed").length;
-  const availableBooks = totalBooks - borrowedBooks;
+  const availableBooks = totalBooks - borrowedBooks || (
+    <span className="inline-flex space-x-1">
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce"></span>
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+    </span>
+  );
 
   // Members Stats for Pie Chart
-  const totalMembers = members.length;
-  const activeMembers = members.filter((m) => m.status === "active").length;
+  const totalMembers = members.length || (
+    <span className="inline-flex space-x-1">
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce"></span>
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+    </span>
+  );
+  const activeMembers = members.filter((m) => m.status === "active").length || (
+    <span className="inline-flex space-x-1">
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce"></span>
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+    </span>
+  );
   const inactiveMembers = totalMembers - activeMembers;
 
   // Capitalize helper
@@ -167,7 +195,7 @@ const DashBoard = () => {
 
   // Prepare chart data with capitalized labels
   const conditionData = {
-    labels: Object.keys(conditionCounts).map(capitalize), 
+    labels: Object.keys(conditionCounts).map(capitalize),
     datasets: [
       {
         data: Object.values(conditionCounts),
@@ -204,23 +232,22 @@ const DashBoard = () => {
     },
   };
 
-  // Latest 5 Books
-  // const recentBooks = [...books].slice(-5).reverse();
-
-  // Percentage of Books Borrowed
-  const borrowedPercentage =
-    totalBooks > 0 ? Math.round((borrowedBooks / totalBooks) * 100) : 0;
-
-  // Overdue Books
-  const today = new Date();
-  const overdueBooks = books.filter(
-    (b) => b.status === "borrowed" && b.dueDate && new Date(b.dueDate) < today
-  ).length;
+  // // Overdue Books
+  // const today = new Date();
+  // const overdueBooks = books.filter(
+  //   (b) => b.status === "borrowed" && b.dueDate && new Date(b.dueDate) < today
+  // ).length;
 
   // Top Performing Book (highest popularity)
-  const topBook =
-    [...books].sort((a, b) => (b.popularity || 0) - (a.popularity || 0))[0]
-      ?.title || "N/A";
+  const topBook = [...books].sort(
+    (a, b) => (b.popularity || 0) - (a.popularity || 0)
+  )[0]?.title || (
+    <span className="inline-flex space-x-1">
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce"></span>
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+    </span>
+  );
 
   return (
     <section className="flex min-h-screen">
@@ -235,7 +262,7 @@ const DashBoard = () => {
 
         <section className="flex-1 pt-0 lg:pt-[70px] m-0 lg:m-2.5 transition-all duration-500 ease-in-out">
           <div
-            className={`h-[87vh] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 mt-6 ${
+            className={`h-[87vh] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-6 ${
               open
                 ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
                 : "lg:ml-24 lg:w-[calc(100%-6rem)]"
@@ -284,7 +311,7 @@ const DashBoard = () => {
                           lightTheme
                             ? "bg-slate-800 shadow-md"
                             : "bg-gray-100 shadow-sm"
-                        } animation flex flex-col justify-between hover:scale-[1.03] transition-transform gap-3`}
+                        } duration-300 flex flex-col justify-between hover:scale-[1.03] transition-transform gap-3`}
                       >
                         <div className="flex items-center justify-center gap-2">
                           {/* Books Icon */}
@@ -342,7 +369,7 @@ const DashBoard = () => {
                           lightTheme
                             ? "bg-slate-800 shadow-md"
                             : "bg-gray-100 shadow-sm"
-                        } animation flex flex-col justify-between hover:scale-[1.03] transition-transform gap-3`}
+                        } duration-300 flex flex-col justify-between hover:scale-[1.03] transition-transform gap-3`}
                       >
                         <div className="flex items-center justify-center gap-2">
                           {/* Borrowed Icon */}
@@ -385,7 +412,7 @@ const DashBoard = () => {
                           lightTheme
                             ? "bg-slate-800 shadow-md"
                             : "bg-gray-100 shadow-sm"
-                        } animation flex flex-col justify-between hover:scale-[1.03] transition-transform gap-3`}
+                        } duration-300 flex flex-col justify-between hover:scale-[1.03] transition-transform gap-3`}
                       >
                         <div className="flex items-center justify-center gap-2">
                           {/* Available Icon */}
@@ -518,9 +545,13 @@ const DashBoard = () => {
                       <p
                         className={`${
                           lightTheme ? "text-neutral-400" : "text-black"
-                        } italic`}
+                        } italic flex justify-center items-center`}
                       >
-                        Loading chart...
+                        <img
+                          src={growingChart}
+                          alt="Loading Bar Chart"
+                          className="w-60 h-60"
+                        />
                       </p>
                     )}
                   </div>
@@ -537,9 +568,13 @@ const DashBoard = () => {
                       <p
                         className={`${
                           lightTheme ? "text-neutral-400" : "text-black"
-                        } italic`}
+                        } italic flex justify-center items-center`}
                       >
-                        Loading book condition chart...
+                        <img
+                          src={pieChart}
+                          alt="Loading Pie Chart"
+                          className="w-40 h-40"
+                        />
                       </p>
                     )}
                   </div>
@@ -615,9 +650,13 @@ const DashBoard = () => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-gray-500 italic flex items-center justify-center">
-                      No books available
-                    </p>
+                    <div className="flex items-center justify-center">
+                      <img
+                        src={booksFallback}
+                        alt="Loading Books"
+                        className="w-40 h-40"
+                      />
+                    </div>
                   )}
                 </div>
               </section>
@@ -709,7 +748,13 @@ const DashBoard = () => {
                       </li>
                     ))
                   ) : (
-                    <p className="text-gray-500 text-sm">No members found.</p>
+                    <div className="flex items-center justify-center">
+                      <img
+                        src={membersFallback}
+                        alt="Loading Books"
+                        className="w-40 h-40"
+                      />
+                    </div>
                   )}
                 </ul>
               </section>

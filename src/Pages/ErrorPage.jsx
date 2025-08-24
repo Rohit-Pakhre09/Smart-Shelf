@@ -1,6 +1,5 @@
 import { useContext } from "react";
-import lightModeSvg from "../assets/Light Mode - 404.svg";
-import darkModeSvg from "../assets/Dark Mode - 404.svg";
+import errorImg from "../assets/404.svg"
 import { AppContext } from "../contexts/AppProvider";
 import { Link } from "react-router-dom";
 
@@ -9,7 +8,7 @@ const ErrorPage = () => {
   return (
     <section className="flex flex-col items-center justify-center min-h-screen">
       <img
-        src={`${lightTheme ? darkModeSvg : lightModeSvg}`}
+        src={errorImg}
         alt="Error"
         className="w-64 h-64 text-white"
       />
@@ -28,7 +27,7 @@ const ErrorPage = () => {
     ${
       lightTheme
         ? "text-white bg-blue-600 hover:bg-blue-800"
-        : "text-black bg-neutral-200 hover:bg-neutral-400"
+        : "text-white bg-indigo-600 hover:bg-indigo-400"
     } 
     rounded-md transition-all duration-500 ease-in-out`}
       >
