@@ -5,9 +5,8 @@ const Footer = () => {
   const { lightTheme } = useContext(AppContext);
   return (
     <footer
-      className={`w-[90%] mx-auto md:w-[95.7%] lg:w-[98%] py-4 mt-6 mb-5 rounded-xl shadow-inner transition-all duration-500 ${
-        lightTheme ? "bg-slate-900 text-neutral-500" : "bg-white text-gray-700"
-      }`}
+      className={`w-[100%] mx-auto sm:w-[100%] md:w-[100%] lg:w-[100%] py-4 mt-6 mb-5 rounded-xl shadow-inner transition-all duration-500 ${lightTheme ? "bg-slate-900 text-neutral-500" : "bg-neutral-50 text-gray-700 shadow-lg"
+        }`}
     >
       <div className="w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-3 px-5">
         {/* Left Section */}
