@@ -10,6 +10,7 @@ import {
   SunIcon,
 } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
+import { BadgeCent } from "lucide-react";
 
 const Navbar = () => {
   const { lightTheme, toggleTheme, open, setOpen } = useContext(AppContext);
@@ -26,7 +27,7 @@ const Navbar = () => {
   const menus = [
     {
       name: "Dashboard",
-      path: "/",
+      path: "/dashboard",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -71,7 +72,7 @@ const Navbar = () => {
       ),
     },
     {
-      name: "Borrowed",
+      name: "Issued",
       path: "/borrowedbooks",
       icon: (
         <svg
@@ -87,22 +88,9 @@ const Navbar = () => {
       ),
     },
     {
-      name: "Request",
-      path: "/request",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-5 h-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path d="M12 20h9" />
-          <path d="M12 4h9" />
-          <path d="M4 9h16M4 15h16" />
-        </svg>
-      ),
+      name: "Fines",
+      path: "/fines",
+      icon: <BadgeCent />,
     },
     {
       name: "Account",
@@ -138,15 +126,13 @@ const Navbar = () => {
         <button
           onClick={() => setOpen(!open)}
           className={`overflow-hidden transition-all duration-500 ease-in-out rounded-md cursor-pointer
-    ${
-      open
-        ? "w-0 opacity-0 px-0 mr-0 pointer-events-none"
-        : `w-12 opacity-100 px-3 py-3 mr-1 ml-2 ${
-            lightTheme
-              ? "hover:bg-gray-800"
-              : "hover:bg-neutral-300 hover:text-black"
-          } transition-all duration-500 ease-in`
-    }
+    ${open
+              ? "w-0 opacity-0 px-0 mr-0 pointer-events-none"
+              : `w-12 opacity-100 px-3 py-3 mr-1 ml-2 ${lightTheme
+                ? "hover:bg-gray-800"
+                : "hover:bg-neutral-300 hover:text-black"
+              } transition-all duration-500 ease-in`
+            }
   `}
         >
           <svg
@@ -191,11 +177,10 @@ const Navbar = () => {
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}
-            className={`p-2 rounded-full ${
-              lightTheme
-                ? "hover:bg-gray-800"
-                : "hover:bg-neutral-300 hover:text-black"
-            } transition-all duration-300 ease-in-out cursor-pointer`}
+            className={`p-2 rounded-full ${lightTheme
+              ? "hover:bg-gray-800"
+              : "hover:bg-neutral-300 hover:text-black"
+              } transition-all duration-300 ease-in-out cursor-pointer`}
           >
             {lightTheme ? (
               <MoonIcon className="h-5 w-5" />
@@ -207,11 +192,10 @@ const Navbar = () => {
           {/* Current Date */}
           <div className="flex items-center gap-2">
             <p
-              className={`font-bold px-4 py-3 rounded-md ${
-                lightTheme
-                  ? "bg-gray-800"
-                  : "bg-indigo-500 text-neutral-50 shadow-sm"
-              } transition-all duration-500 ease-in-out`}
+              className={`font-bold px-4 py-3 rounded-md ${lightTheme
+                ? "bg-gray-800"
+                : "bg-indigo-500 text-neutral-50 shadow-sm"
+                } transition-all duration-500 ease-in-out`}
             >
               {" "}
               {new Date().toLocaleDateString("en-US", {
@@ -284,9 +268,8 @@ const Navbar = () => {
           {/* Current Date */}
           <div className="flex items-center gap-2">
             <p
-              className={`font-bold px-3 py-2 rounded-md ${
-                lightTheme ? "bg-gray-800" : "bg-neutral-200 text-black"
-              } transition-all duration-500 ease-in-out text-[10px]`}
+              className={`font-bold px-3 py-2 rounded-md ${lightTheme ? "bg-gray-800" : "bg-neutral-200 text-black"
+                } transition-all duration-500 ease-in-out text-[10px]`}
             >
               {" "}
               {new Date().toLocaleDateString("en-US", {
@@ -303,9 +286,8 @@ const Navbar = () => {
       <div className="visible block lg:hidden opacity-100 lg:opacity-0 transition-all duration-500 ease-in-out h-auto mb-20">
         {/* Backdrop */}
         <div
-          className={`fixed inset-0 bg-black/50 z-50 transition-opacity duration-500 ease-in-out ${
-            mobileMenu ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
+          className={`fixed inset-0 bg-black/50 z-50 transition-opacity duration-500 ease-in-out ${mobileMenu ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
           onClick={() => setMobileMenu(false)}
         />
 
@@ -319,9 +301,8 @@ const Navbar = () => {
           {/* Sidebar Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <p
-              className={`font-bold text-xl ${
-                lightTheme ? "text-white" : "text-black"
-              }`}
+              className={`font-bold text-xl ${lightTheme ? "text-white" : "text-black"
+                }`}
             >
               Smart{" "}
               <span
@@ -344,18 +325,20 @@ const Navbar = () => {
               <li key={index}>
                 <NavLink
                   to={menu.path}
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    setOpen(false);
+                    setMobileMenu(false);
+                  }}
                   className={({ isActive }) =>
                     `flex items-center gap-3 py-3 px-2 rounded-md transition cursor-pointer 
-        ${
-          isActive
-            ? lightTheme
-              ? "bg-gray-800 text-white font-semibold"
-              : "bg-neutral-300 text-black font-semibold"
-            : lightTheme
-            ? "hover:bg-gray-800 hover:text-white"
-            : "hover:bg-neutral-300 hover:text-black"
-        }`
+        ${isActive
+                      ? lightTheme
+                        ? "bg-gray-800 text-white font-semibold"
+                        : "bg-neutral-300 text-black font-semibold"
+                      : lightTheme
+                        ? "hover:bg-gray-800 hover:text-white"
+                        : "hover:bg-neutral-300 hover:text-black"
+                    }`
                   }
                 >
                   {menu.icon}
