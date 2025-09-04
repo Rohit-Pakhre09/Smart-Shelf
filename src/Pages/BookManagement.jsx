@@ -1405,70 +1405,70 @@ const BookManagement = () => {
     }
   };
 
-  const handleIssueBook = async (
-    bookId,
-    copyId,
-    memberId,
-    issuedBy,
-    issueDate,
-    dueDate
-  ) => {
-    if (
-      !bookId ||
-      !copyId ||
-      !memberId ||
-      !issuedBy ||
-      !issueDate ||
-      !dueDate
-    ) {
-      console.error("Invalid parameters for issuing book:", {
-        bookId,
-        copyId,
-        memberId,
-        issuedBy,
-        issueDate,
-        dueDate,
-      });
-      setError("Cannot issue book: Missing required fields.");
-      return;
-    }
-    try {
-      const book = books.find((b) => b.id === bookId);
-      if (!book) {
-        throw new Error("Book not found.");
-      }
-      const copy = book.copies.find((c) => c.id === copyId);
-      if (!copy) {
-        throw new Error("Copy not found.");
-      }
-      if (copy.availability !== "available") {
-        throw new Error("This copy is not available for issuing.");
-      }
-      await dispatch(
-        issueBook({
-          bookId,
-          copyId,
-          issueData: {
-            id: uuidv4(),
-            memberId,
-            issuedBy,
-            issueDate,
-            dueDate,
-            status: "issued",
-            renewals: 0,
-          },
-        })
-      ).unwrap();
-      await dispatch(fetchBooks()).unwrap();
-      await dispatch(fetchIssuedBooks()).unwrap();
-    } catch (err) {
-      console.error("Issue book error:", err);
-      setError(
-        err?.message ||
-        "Failed to issue book. Please check your inputs or server status."
-      );
-    }
-  };
+  // const handleIssueBook = async (
+  //   bookId,
+  //   copyId,
+  //   memberId,
+  //   issuedBy,
+  //   issueDate,
+  //   dueDate
+  // ) => {
+  //   if (
+  //     !bookId ||
+  //     !copyId ||
+  //     !memberId ||
+  //     !issuedBy ||
+  //     !issueDate ||
+  //     !dueDate
+  //   ) {
+  //     console.error("Invalid parameters for issuing book:", {
+  //       bookId,
+  //       copyId,
+  //       memberId,
+  //       issuedBy,
+  //       issueDate,
+  //       dueDate,
+  //     });
+  //     setError("Cannot issue book: Missing required fields.");
+  //     return;
+  //   }
+  //   try {
+  //     const book = books.find((b) => b.id === bookId);
+  //     if (!book) {
+  //       throw new Error("Book not found.");
+  //     }
+  //     const copy = book.copies.find((c) => c.id === copyId);
+  //     if (!copy) {
+  //       throw new Error("Copy not found.");
+  //     }
+  //     if (copy.availability !== "available") {
+  //       throw new Error("This copy is not available for issuing.");
+  //     }
+  //     await dispatch(
+  //       issueBook({
+  //         bookId,
+  //         copyId,
+  //         issueData: {
+  //           id: uuidv4(),
+  //           memberId,
+  //           issuedBy,
+  //           issueDate,
+  //           dueDate,
+  //           status: "issued",
+  //           renewals: 0,
+  //         },
+  //       })
+  //     ).unwrap();
+  //     await dispatch(fetchBooks()).unwrap();
+  //     await dispatch(fetchIssuedBooks()).unwrap();
+  //   } catch (err) {
+  //     console.error("Issue book error:", err);
+  //     setError(
+  //       err?.message ||
+  //       "Failed to issue book. Please check your inputs or server status."
+  //     );
+  //   }
+  // };
 
   const handleOpenIssueModal = (book) => {
     if (

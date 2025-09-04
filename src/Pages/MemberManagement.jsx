@@ -3,6 +3,8 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { AppContext } from "../contexts/AppProvider";
 import Footer from "../components/Footer";
+import { useDispatch } from "react-redux";
+import { deleteMember, addMembers, updateMember } from "../modules/MemberSlice";
 import {
   Mail,
   Phone,
@@ -31,9 +33,14 @@ const MemberManagement = () => {
   const [sortDir, setSortDir] = useState("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [brokenImages, setBrokenImages] = useState({});
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState("");
+  const [, setError] = useState(null);
   const itemsPerPage = 10;
 
   const membersUrl = "https://smart-shelf-server-ykc7.onrender.com/members";
+  const dispatch = useDispatch()
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -143,6 +150,26 @@ const MemberManagement = () => {
     }
   };
 
+
+  const handleAddMember = () => {
+    setSelectedMember(null);
+    setModalType("add");
+    setShowModal(true);
+    setError(null);
+  };
+
+  // ✅ Delete member
+  const handleDeleteMember = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this member?")) return;
+    try {
+      await fetch(`${membersUrl}/${id}`, { method: "DELETE" });
+      setMembers((prev) => prev.filter((m) => m.id !== id));
+      dispatch(deleteMember(id));
+    } catch (err) {
+      console.error("Error deleting member:", err);
+    }
+  };
+
   const getStatusClasses = (status) => {
     if (status === "active") {
       return lightTheme
@@ -155,6 +182,276 @@ const MemberManagement = () => {
 
   const handleImageError = (memberId) => {
     setBrokenImages((prev) => ({ ...prev, [memberId]: true }));
+  };
+
+  // ✅ Modal Form for Add/Edit Member
+
+  const MemberModal = () => {
+    const [formData, setFormData] = useState({
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      membershipType: "basic",
+      status: "active",
+      joinDate: new Date().toISOString().split("T")[0],
+      membershipExpiry: "",
+      outstandingFines: 0,
+    });
+
+    useEffect(() => {
+      if (modalType === "edit" && selectedMember) {
+        setFormData({
+          name: selectedMember.name || "",
+          email: selectedMember.email || "",
+          phone: selectedMember.phone || "",
+          address: selectedMember.address || "",
+          membershipType: selectedMember.membershipType || "basic",
+          status: selectedMember.status || "active",
+          joinDate: selectedMember.joinDate || new Date().toISOString().split("T")[0],
+          membershipExpiry: selectedMember.membershipExpiry || "",
+          outstandingFines: selectedMember.outstandingFines || 0,
+        });
+      } else {
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          address: "",
+          membershipType: "basic",
+          status: "active",
+          joinDate: new Date().toISOString().split("T")[0],
+          membershipExpiry: "",
+          outstandingFines: 0,
+        });
+      }
+    }, [modalType, selectedMember]);
+
+    const handleChange = (e) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      try {
+        if (modalType === "add") {
+          const res = await fetch(membersUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData),
+          });
+          const newMember = await res.json();
+          setMembers((prev) => [...prev, newMember]);
+          dispatch(addMembers(newMember));
+        }
+        else if
+          (modalType === "edit" && selectedMember) {
+          const updatedMember = await dispatch(
+            updateMember({ id: selectedMember.id, updatedData: formData })
+          ).unwrap();
+          setMembers((prev) =>
+            prev.map((m) => (m.id === updatedMember.id ? updatedMember : m))
+          );
+        }
+        setShowModal(false);
+      } catch (err) {
+        console.error("Error saving member:", err);
+        setError("Failed to save member");
+      }
+    };
+
+
+    return (
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50  p-4 ">
+        <div
+          className={`relative w-full max-w-lg rounded-2xl shadow-2xl border overflow-y-auto max-h-[85vh] 
+          p-6   
+      ${lightTheme
+              ? "bg-gray-800 text-white border-gray-700"
+              : "bg-white text-gray-900 border-gray-200"
+            }`}
+        >
+          {/* Header */}
+          <div className="flex justify-between items-center mb-5">
+            <h2 className="text-lg sm:text-xl font-bold tracking-wide">
+              {modalType === "add" ? "➕ Add Member" : "✏️ Edit Member"}
+            </h2>
+            <button
+              className="text-gray-400 hover:text-red-500"
+              onClick={() => setShowModal(false)}
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Form */}
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+            {/* Name */}
+            <input
+              type="text"
+              name="name"
+              placeholder="Full Name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className={`w-full p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+          ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
+                  : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
+                }`}
+            />
+
+            {/* Email */}
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className={`w-full p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+          ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
+                  : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
+                }`}
+            />
+            {/* phone */}
+            <input
+              type="number"
+              name="phone"
+              placeholder="phone number"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              className={`w-full p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+          ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
+                  : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
+                }`}
+            />
+
+            {/* Address */}
+            <textarea
+              name="address"
+              placeholder="Address"
+              value={formData.address}
+              onChange={handleChange}
+              required
+              rows={3}
+              className={`w-full p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition resize-none 
+          ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
+                  : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
+                }`}
+            />
+
+            {/* Membership Type */}
+            <div>
+              <label className="block text-sm font-medium mb-1 opacity-80">
+                Membership Type
+              </label>
+              <select
+                name="membershipType"
+                value={formData.membershipType}
+                onChange={handleChange}
+                className={`w-full p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+            ${lightTheme
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-gray-50 text-gray-900 border-gray-300"
+                  }`}
+              >
+                <option value="basic">Basic</option>
+                <option value="premium">Premium</option>
+                <option value="vip">VIP</option>
+              </select>
+            </div>
+
+            {/* Status */}
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              className={`w-full p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+          ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-gray-50 text-gray-900 border-gray-300"
+                }`}
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+
+            {/* Expiry */}
+            <input
+              type="date"
+              name="membershipExpiry"
+              value={formData.membershipExpiry}
+              onChange={handleChange}
+              className={`w-full p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+          ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-gray-50 text-gray-900 border-gray-300"
+                }`}
+            />
+
+            <div>
+              <label className="block text-normal font-medium mb-1 opacity-80">
+                Fines
+              </label>
+              <input
+                type="number"
+                name="outstandingFines"
+                placeholder="Outstanding Fines"
+                value={formData.outstandingFines}
+                onChange={handleChange}
+                className={`w-full p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+                 ${lightTheme
+                    ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
+                    : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
+                  }`}
+              />
+            </div>
+            {/* Buttons */}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className={`px-5 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 text-sm sm:text-base 
+            ${lightTheme
+                    ? "bg-gray-600 text-white hover:bg-gray-700"
+                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                  }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className={`px-5 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 text-sm sm:text-base shadow-md
+            ${lightTheme
+                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    : "bg-indigo-500 text-white hover:bg-indigo-600"
+                  }`}
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -171,8 +468,8 @@ const MemberManagement = () => {
         <section className="flex-1 pt-0 lg:pt-[70px] m-0 lg:m-2.5 animation">
           <div
             className={`h-[87vh] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl animation lg:mt-6 ${open
-                ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
-                : "lg:ml-24 lg:w-[calc(100%-6rem)]"
+              ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
+              : "lg:ml-24 lg:w-[calc(100%-6rem)]"
               } `}
           >
             {/* Heading */}
@@ -199,8 +496,8 @@ const MemberManagement = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className={`pl-10 p-2 rounded-lg w-full ${lightTheme
-                        ? "bg-gray-800 text-white placeholder-gray-400 border border-gray-700"
-                        : "bg-gray-100 text-black placeholder-gray-500 border border-gray-300"
+                      ? "bg-gray-800 text-white placeholder-gray-400 border border-gray-700"
+                      : "bg-gray-100 text-black placeholder-gray-500 border border-gray-300"
                       } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   />
                 </div>
@@ -208,8 +505,8 @@ const MemberManagement = () => {
                   value={membershipFilter}
                   onChange={(e) => setMembershipFilter(e.target.value)}
                   className={`p-2 rounded-lg w-full md:w-auto ${lightTheme
-                      ? "bg-gray-800 text-white border border-gray-700"
-                      : "bg-gray-100 text-black border border-gray-300"
+                    ? "bg-gray-800 text-white border border-gray-700"
+                    : "bg-gray-100 text-black border border-gray-300"
                     } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 >
                   {membershipTypes.map((type) => (
@@ -224,8 +521,8 @@ const MemberManagement = () => {
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className={`p-2 rounded-lg w-full md:w-auto ${lightTheme
-                      ? "bg-gray-800 text-white border border-gray-700"
-                      : "bg-gray-100 text-black border border-gray-300"
+                    ? "bg-gray-800 text-white border border-gray-700"
+                    : "bg-gray-100 text-black border border-gray-300"
                     } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 >
                   {statuses.map((stat) => (
@@ -240,8 +537,8 @@ const MemberManagement = () => {
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className={`p-2 rounded-lg w-full md:w-auto ${lightTheme
-                      ? "bg-gray-800 text-white border border-gray-700"
-                      : "bg-gray-100 text-black border border-gray-300"
+                    ? "bg-gray-800 text-white border border-gray-700"
+                    : "bg-gray-100 text-black border border-gray-300"
                     } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 >
                   <option value="name">Sort by Name</option>
@@ -249,17 +546,47 @@ const MemberManagement = () => {
                   <option value="membershipExpiry">Sort by Expiry</option>
                   <option value="outstandingFines">Sort by Fines</option>
                 </select>
-                <select
-                  value={sortDir}
-                  onChange={(e) => setSortDir(e.target.value)}
-                  className={`p-2 rounded-lg w-full md:w-auto ${lightTheme
-                      ? "bg-gray-800 text-white border border-gray-700"
-                      : "bg-gray-100 text-black border border-gray-300"
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                <button
+                  onClick={handleAddMember}
+                  className={`flex items-center justify-center gap-2 rounded-md shadow-md cursor-pointer ${lightTheme
+                    ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                    : "bg-indigo-500 hover:bg-indigo-600 text-white"
+                    }`}
                 >
-                  <option value="asc">Ascending</option>
-                  <option value="desc">Descending</option>
-                </select>
+                  <span className="flex md:hidden w-10 h-10 rounded-full items-center justify-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  </span>
+                  <span className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                    Member
+                  </span>
+                </button>
               </div>
 
               {loading ? (
@@ -287,34 +614,26 @@ const MemberManagement = () => {
                   <div className="overflow-x-auto rounded-lg shadow">
                     <table
                       className={`hidden md:table w-full border-collapse ${lightTheme
-                          ? "bg-gray-900 text-white"
-                          : "bg-white text-black"
+                        ? "bg-gray-900 text-white"
+                        : "bg-white text-black"
                         }`}
                     >
                       <thead>
                         <tr
                           className={`${lightTheme
-                              ? "bg-gray-800 text-blue-300"
-                              : "bg-gray-200 text-blue-700"
+                            ? "bg-gray-800 text-blue-300"
+                            : "bg-gray-200 text-blue-700"
                             }`}
                         >
-                          <th
-                            className="p-3 text-left cursor-pointer"
-                            onClick={() => handleSort("name")}
-                          >
+                          <th className="p-3 text-left cursor-pointer" onClick={() => handleSort("name")}>
                             Member{" "}
-                            {sortBy === "name" && (
-                              <>
-                                {sortDir === "asc" ? (
-                                  <ArrowUp size={16} className="inline ml-1" />
-                                ) : (
-                                  <ArrowDown
-                                    size={16}
-                                    className="inline ml-1"
-                                  />
-                                )}
-                              </>
-                            )}
+                            {sortBy === "name" &&
+                              (sortDir === "asc" ? (
+                                <ArrowUp size={16} className="inline ml-1" />
+                              ) : (
+                                <ArrowDown size={16} className="inline ml-1" />
+                              ))}
+
                           </th>
                           <th className="p-3 text-left">Contact</th>
                           <th className="p-3 text-left">Address</th>
@@ -323,18 +642,12 @@ const MemberManagement = () => {
                             onClick={() => handleSort("membershipExpiry")}
                           >
                             Membership{" "}
-                            {sortBy === "membershipExpiry" && (
-                              <>
-                                {sortDir === "asc" ? (
-                                  <ArrowUp size={16} className="inline ml-1" />
-                                ) : (
-                                  <ArrowDown
-                                    size={16}
-                                    className="inline ml-1"
-                                  />
-                                )}
-                              </>
-                            )}
+                            {sortBy === "membershipExpiry" &&
+                              (sortDir === "asc" ? (
+                                <ArrowUp size={16} className="inline ml-1" />
+                              ) : (
+                                <ArrowDown size={16} className="inline ml-1" />
+                              ))}
                           </th>
                           <th className="p-3 text-left">Status</th>
                           <th
@@ -342,19 +655,15 @@ const MemberManagement = () => {
                             onClick={() => handleSort("outstandingFines")}
                           >
                             Fines{" "}
-                            {sortBy === "outstandingFines" && (
-                              <>
-                                {sortDir === "asc" ? (
-                                  <ArrowUp size={16} className="inline ml-1" />
-                                ) : (
-                                  <ArrowDown
-                                    size={16}
-                                    className="inline ml-1"
-                                  />
-                                )}
-                              </>
-                            )}
+                            {sortBy === "outstandingFines" &&
+                              (sortDir === "asc" ? (
+                                <ArrowUp size={16} className="inline ml-1" />
+                              ) : (
+                                <ArrowDown size={16} className="inline ml-1" />
+                              ))}
                           </th>
+                          {/* ✅ Actions column */}
+                          <th className="p-3 text-left">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -362,8 +671,8 @@ const MemberManagement = () => {
                           <tr
                             key={idx}
                             className={`border-b ${lightTheme
-                                ? "border-gray-700 hover:bg-gray-800"
-                                : "border-gray-200 hover:bg-gray-100"
+                              ? "border-gray-700 hover:bg-gray-800"
+                              : "border-gray-200 hover:bg-gray-100"
                               }`}
                           >
                             <td className="p-3 flex items-center gap-3">
@@ -378,8 +687,8 @@ const MemberManagement = () => {
                               ) : (
                                 <div
                                   className={`w-10 h-10 flex items-center justify-center rounded-full font-bold text-lg ${lightTheme
-                                      ? "bg-blue-600 text-white"
-                                      : "bg-blue-200 text-blue-900"
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-blue-200 text-blue-900"
                                     }`}
                                 >
                                   {member.name?.charAt(0).toUpperCase() || "U"}
@@ -433,19 +742,40 @@ const MemberManagement = () => {
                               <AlertCircle size={16} /> ₹
                               {member.outstandingFines}
                             </td>
+                            {/* ✅ Desktop Actions */}
+                            <td className="p-3">
+                              <div className="flex gap-2 justify-center">
+                                <button
+                                  onClick={() => {
+                                    setSelectedMember(member);
+                                    setModalType("edit");
+                                    setShowModal(true);
+                                  }}
+                                  className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteMember(member.id)}
+                                  className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
 
                     {/* Mobile Card Layout */}
-                    <div className="grid grid-cols-1 gap-4 md:hidden">
+                    <div className="grid md:hidden gap-4">
                       {currentMembers.map((member, idx) => (
                         <div
                           key={idx}
                           className={`p-4 rounded-lg shadow ${lightTheme
-                              ? "bg-gray-900 text-white"
-                              : "bg-white text-black"
+                            ? "bg-gray-900 text-white"
+                            : "bg-white text-black"
                             }`}
                         >
                           {/* Top: Avatar + Name */}
@@ -460,8 +790,8 @@ const MemberManagement = () => {
                             ) : (
                               <div
                                 className={`w-10 h-10 flex items-center justify-center rounded-full font-bold text-lg ${lightTheme
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-blue-200 text-blue-900"
+                                  ? "bg-blue-600 text-white"
+                                  : "bg-blue-200 text-blue-900"
                                   }`}
                               >
                                 {member.name?.charAt(0).toUpperCase() || "U"}
@@ -515,6 +845,25 @@ const MemberManagement = () => {
                               {member.outstandingFines}
                             </span>
                           </div>
+                          {/* ✅ Mobile Actions */}
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => {
+                                setSelectedMember(member);
+                                setModalType("edit");
+                                setShowModal(true);
+                              }}
+                              className="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMember(member.id)}
+                              className="flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -527,8 +876,8 @@ const MemberManagement = () => {
                         disabled={currentPage === 1}
                         onClick={() => setCurrentPage((p) => p - 1)}
                         className={`px-3 py-1 rounded disabled:opacity-50 ${lightTheme
-                            ? "bg-gray-800 text-white hover:bg-gray-700"
-                            : "bg-gray-100 text-black hover:bg-gray-200"
+                          ? "bg-gray-800 text-white hover:bg-gray-700"
+                          : "bg-gray-100 text-black hover:bg-gray-200"
                           }`}
                       >
                         <ChevronLeft />
@@ -538,12 +887,12 @@ const MemberManagement = () => {
                           key={i}
                           onClick={() => setCurrentPage(i + 1)}
                           className={`px-3 py-1 rounded ${currentPage === i + 1
-                              ? lightTheme
-                                ? "bg-blue-600 text-white"
-                                : "bg-blue-200 text-blue-900"
-                              : lightTheme
-                                ? "bg-gray-800 text-white hover:bg-gray-700"
-                                : "bg-gray-100 text-black hover:bg-gray-200"
+                            ? lightTheme
+                              ? "bg-blue-600 text-white"
+                              : "bg-blue-200 text-blue-900"
+                            : lightTheme
+                              ? "bg-gray-800 text-white hover:bg-gray-700"
+                              : "bg-gray-100 text-black hover:bg-gray-200"
                             } cursor-pointer`}
                         >
                           {i + 1}
@@ -553,8 +902,8 @@ const MemberManagement = () => {
                         disabled={currentPage === totalPages}
                         onClick={() => setCurrentPage((p) => p + 1)}
                         className={`px-3 py-1 rounded disabled:opacity-50 cursor-pointer ${lightTheme
-                            ? "bg-gray-800 text-white hover:bg-gray-700"
-                            : "bg-gray-100 text-black hover:bg-gray-200"
+                          ? "bg-gray-800 text-white hover:bg-gray-700"
+                          : "bg-gray-100 text-black hover:bg-gray-200"
                           }`}
                       >
                         <ChevronRight />
@@ -568,6 +917,9 @@ const MemberManagement = () => {
             {/* Footer */}
             <Footer />
           </div>
+
+          {/* ✅ Show Modal */}
+          {showModal && <MemberModal />}
         </section>
       </div>
     </section>
@@ -575,3 +927,4 @@ const MemberManagement = () => {
 };
 
 export default MemberManagement;
+

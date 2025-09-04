@@ -178,7 +178,7 @@ const DashBoard = () => {
       <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.4s]"></span>
     </span>
   );
-  const inactiveMembers = totalMembers - activeMembers;
+  // const inactiveMembers = totalMembers - activeMembers;
 
   // Capitalize helper
   const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);

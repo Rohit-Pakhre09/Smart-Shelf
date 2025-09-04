@@ -67,7 +67,7 @@ export const updateBook = createAsyncThunk(
       if (!id) throw new Error("Book ID is undefined");
       const cleanedBook = Object.fromEntries(
         Object.entries(updatedBook).filter(
-          ([_, value]) => value != null && value !== ""
+          ([ value]) => value != null && value !== ""
         )
       );
       const response = await axios.patch(`${booksUrl}/${id}`, cleanedBook, {
