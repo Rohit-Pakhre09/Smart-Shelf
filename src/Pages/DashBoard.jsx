@@ -1,4 +1,3 @@
-// DashBoard.jsx
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import { useContext, useEffect, useState } from "react";
@@ -33,14 +32,16 @@ ChartJS.register(
   Legend
 );
 
-// URL's
+// URLs
 const booksUrl = "https://smart-shelf-server-qm2u.onrender.com/books";
-const memebersUrl = "https://smart-shelf-server-qm2u.onrender.com/members";
+const membersUrl = "https://smart-shelf-server-qm2u.onrender.com/members";
+const issuedBooksUrl = "https://smart-shelf-server-qm2u.onrender.com/issuedBooks";
 
 const DashBoard = () => {
   const { lightTheme, open } = useContext(AppContext);
   const [books, setBooks] = useState([]);
   const [members, setMembers] = useState([]);
+  const [issuedBooks, setIssuedBooks] = useState([]);
 
   // Fetch books from API
   useEffect(() => {
@@ -60,7 +61,7 @@ const DashBoard = () => {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const res = await axios.get(memebersUrl);
+        const res = await axios.get(membersUrl);
         setMembers(res.data);
       } catch (err) {
         console.error("Error fetching members:", err);
@@ -68,6 +69,20 @@ const DashBoard = () => {
     };
 
     fetchMembers();
+  }, []);
+
+  // Fetch issued books from API
+  useEffect(() => {
+    const fetchIssuedBooks = async () => {
+      try {
+        const res = await axios.get(issuedBooksUrl);
+        setIssuedBooks(res.data);
+      } catch (err) {
+        console.error("Error fetching issued books:", err);
+      }
+    };
+
+    fetchIssuedBooks();
   }, []);
 
   // Popular Books
@@ -154,8 +169,14 @@ const DashBoard = () => {
       <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.4s]"></span>
     </span>
   );
-  const borrowedBooks = books.filter((b) => b.status === "borrowed").length;
-  const availableBooks = totalBooks - borrowedBooks || (
+  const issuedBooksCount = issuedBooks.length || (
+    <span className="inline-flex space-x-1">
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce"></span>
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+      <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+    </span>
+  );
+  const availableBooks = books.length - issuedBooks.length || (
     <span className="inline-flex space-x-1">
       <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce"></span>
       <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.2s]"></span>
@@ -178,7 +199,7 @@ const DashBoard = () => {
       <span className="w-2 h-2 bg-indigo-300 rounded-full animate-bounce [animation-delay:0.4s]"></span>
     </span>
   );
-  // const inactiveMembers = totalMembers - activeMembers;
+  const inactiveMembers = totalMembers - activeMembers;
 
   // Capitalize helper
   const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
@@ -192,6 +213,9 @@ const DashBoard = () => {
       }
       return acc;
     }, {});
+
+  // Calculate total copies for percentage
+  const totalCopies = Object.values(conditionCounts).reduce((sum, count) => sum + count, 0);
 
   // Prepare chart data with capitalized labels
   const conditionData = {
@@ -221,7 +245,11 @@ const DashBoard = () => {
       },
       tooltip: {
         callbacks: {
-          label: (ctx) => `${capitalize(ctx.label)}: ${ctx.raw}`,
+          label: (ctx) => {
+            const value = ctx.raw;
+            const percentage = totalCopies > 0 ? ((value / totalCopies) * 100).toFixed(1) : 0;
+            return `${capitalize(ctx.label)}: ${percentage}%`;
+          },
         },
       },
     },
@@ -250,14 +278,14 @@ const DashBoard = () => {
       </div>
 
       {/* Navbar + Content */}
-      <div className="flex flex-col flex-1 transition-all duration-500 ">
+      <div className="flex flex-col flex-1 transition-all duration-500">
         <Navbar />
 
         <section className="flex-1 pt-0 lg:pt-[70px] m-0 lg:m-2.5 transition-all duration-500 ease-in-out">
           <div
             className={`h-[87vh] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-6 ${open
-                ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
-                : "lg:ml-24 lg:w-[calc(100%-6rem)]"
+              ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
+              : "lg:ml-24 lg:w-[calc(100%-6rem)]"
               }`}
           >
             {/* Dashboard Heading */}
@@ -275,7 +303,7 @@ const DashBoard = () => {
                   {/* Quick Stats */}
                   <div
                     className={`w-auto ${lightTheme ? "bg-slate-900 text-white" : "bg-white"
-                      } rounded-xl p-6 shadow-lg  animation flex flex-col gap-6`}
+                      } rounded-xl p-6 shadow-lg animation flex flex-col gap-6`}
                   >
                     <h2 className="text-xl md:text-3xl font-bold mb-2 pb-2 flex items-center gap-2">
                       <svg
@@ -297,12 +325,11 @@ const DashBoard = () => {
                       {/* Total Books */}
                       <div
                         className={`p-5 rounded-xl shadow-blue-300 ${lightTheme
-                            ? "bg-slate-800 shadow-md"
-                            : "bg-gray-100 shadow-sm"
-                          } flex flex-col justify-between hover:scale-[1.03] animation gap-3`}
+                          ? "bg-slate-800 shadow-md border-slate-700"
+                          : "bg-gray-100 shadow-sm border-gray-100"
+                          } border flex flex-col justify-between hover:scale-[1.03] animation gap-3`}
                       >
                         <div className="flex items-center justify-center gap-2">
-                          {/* Books Icon */}
                           <svg
                             className="w-7 h-7 text-blue-500"
                             fill="none"
@@ -321,8 +348,6 @@ const DashBoard = () => {
                         <p className="text-sm opacity-80 font-medium md:text-md">
                           Total Books
                         </p>
-
-                        {/* New SVG → Book Stack */}
                         <svg viewBox="0 0 100 40" className="w-full h-14">
                           <rect
                             x="10"
@@ -351,15 +376,14 @@ const DashBoard = () => {
                         </svg>
                       </div>
 
-                      {/* Borrowed */}
+                      {/* Issued Books */}
                       <div
                         className={`p-5 rounded-xl shadow-red-300 ${lightTheme
-                            ? "bg-slate-800 shadow-md"
-                            : "bg-gray-100 shadow-sm"
-                          } flex flex-col justify-between hover:scale-[1.03] animation gap-3`}
+                          ? "bg-slate-800 shadow-md border-slate-700"
+                          : "bg-gray-100 shadow-sm border-gray-100"
+                          } border flex flex-col justify-between hover:scale-[1.03] animation gap-3`}
                       >
                         <div className="flex items-center justify-center gap-2">
-                          {/* Borrowed Icon */}
                           <svg
                             className="w-7 h-7 text-red-500"
                             fill="none"
@@ -373,13 +397,11 @@ const DashBoard = () => {
                               d="M12 4v16m8-8H4"
                             />
                           </svg>
-                          <p className="text-3xl font-bold">{borrowedBooks}</p>
+                          <p className="text-3xl font-bold">{issuedBooksCount}</p>
                         </div>
                         <p className="text-sm opacity-80 font-medium md:text-md">
-                          Borrowed
+                          Issued Books
                         </p>
-
-                        {/* New SVG → Borrowed Trend */}
                         <svg viewBox="0 0 100 40" className="w-full h-14">
                           <circle cx="20" cy="25" r="6" fill="#ef4444" />
                           <circle cx="50" cy="15" r="6" fill="#ef4444" />
@@ -393,15 +415,14 @@ const DashBoard = () => {
                         </svg>
                       </div>
 
-                      {/* Available */}
+                      {/* Available Books */}
                       <div
                         className={`p-5 rounded-xl shadow-green-300 ${lightTheme
-                            ? "bg-slate-800 shadow-md"
-                            : "bg-gray-100 shadow-sm"
-                          } flex flex-col justify-between hover:scale-[1.03] animation gap-3`}
+                          ? "bg-slate-800 shadow-md border-slate-700"
+                          : "bg-gray-100 shadow-sm border-gray-100"
+                          } border flex flex-col justify-between hover:scale-[1.03] animation gap-3`}
                       >
                         <div className="flex items-center justify-center gap-2">
-                          {/* Available Icon */}
                           <svg
                             className="w-7 h-7 text-green-500"
                             fill="none"
@@ -418,10 +439,8 @@ const DashBoard = () => {
                           <p className="text-3xl font-bold">{availableBooks}</p>
                         </div>
                         <p className="text-sm opacity-80 font-medium md:text-md">
-                          Available
+                          Available Books
                         </p>
-
-                        {/* New SVG → Circular Progress Gauge */}
                         <svg viewBox="0 0 36 36" className="w-14 h-14 mx-auto">
                           <path
                             className="text-gray-300"
@@ -429,19 +448,21 @@ const DashBoard = () => {
                             strokeWidth="3"
                             fill="none"
                             d="M18 2.0845
-             a 15.9155 15.9155 0 0 1 0 31.831
-             a 15.9155 15.9155 0 0 1 0 -31.831"
+                             a 15.9155 15.9155 0 0 1 0 31.831
+                             a 15.9155 15.9155 0 0 1 0 -31.831"
                           />
                           <path
                             stroke="#22c55e"
                             strokeWidth="3"
                             strokeLinecap="round"
                             fill="none"
-                            strokeDasharray={`${(availableBooks / totalBooks) * 100
+                            strokeDasharray={`${books.length && issuedBooks.length
+                              ? (availableBooks / totalBooks) * 100
+                              : 0
                               }, 100`}
                             d="M18 2.0845
-             a 15.9155 15.9155 0 0 1 0 31.831
-             a 15.9155 15.9155 0 0 1 0 -31.831"
+                             a 15.9155 15.9155 0 0 1 0 31.831
+                             a 15.9155 15.9155 0 0 1 0 -31.831"
                           />
                         </svg>
                       </div>
@@ -471,36 +492,37 @@ const DashBoard = () => {
                       Library Insights
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3">
-                      {/* Total Members */}
                       <div
-                        className={`p-3 rounded-lg shadow ${lightTheme ? "bg-slate-800" : "bg-gray-100"
+                        className={`p-3 rounded-lg shadow border ${lightTheme
+                          ? "bg-slate-800 border-slate-700"
+                          : "bg-gray-100 border-gray-200"
                           } animation`}
                       >
                         <p className="text-2xl font-bold">{totalMembers}</p>
                         <p className="text-sm">Total Members</p>
                       </div>
-
-                      {/* Available Books */}
                       <div
-                        className={`p-3 rounded-lg shadow ${lightTheme ? "bg-slate-800" : "bg-gray-100"
+                        className={`p-3 rounded-lg shadow border ${lightTheme
+                          ? "bg-slate-800 border-slate-700"
+                          : "bg-gray-100 border-gray-200"
                           } animation`}
                       >
                         <p className="text-2xl font-bold">{availableBooks}</p>
                         <p className="text-sm">Available Books</p>
                       </div>
-
-                      {/* Active Members */}
                       <div
-                        className={`p-3 rounded-lg shadow ${lightTheme ? "bg-slate-800" : "bg-gray-100"
+                        className={`p-3 rounded-lg shadow border ${lightTheme
+                          ? "bg-slate-800 border-slate-700"
+                          : "bg-gray-100 border-gray-200"
                           } animation`}
                       >
                         <p className="text-2xl font-bold">{activeMembers}</p>
                         <p className="text-sm">Active Members</p>
                       </div>
-
-                      {/* Top Performing Book */}
                       <div
-                        className={`p-3 rounded-lg shadow ${lightTheme ? "bg-slate-800" : "bg-gray-100"
+                        className={`p-3 rounded-lg shadow border ${lightTheme
+                          ? "bg-slate-800 border-slate-700"
+                          : "bg-gray-100 border-gray-200"
                           } animation`}
                       >
                         <p className="text-xl font-bold">{topBook}</p>
@@ -512,7 +534,6 @@ const DashBoard = () => {
 
                 {/* Graph + Pie Chart */}
                 <div className="flex flex-col gap-5 w-full lg:w-1/3">
-                  {/* Bar Graph */}
                   <div
                     className={`min-h-75 w-full flex justify-center items-center rounded-lg p-5 shadow-md animation ${lightTheme ? "bg-slate-900 text-white" : "bg-white"
                       }`}
@@ -532,8 +553,6 @@ const DashBoard = () => {
                       </p>
                     )}
                   </div>
-
-                  {/* Pie Chart */}
                   <div
                     className={`h-70 flex justify-center items-center ${lightTheme ? "bg-slate-900 text-white" : "bg-white"
                       } rounded-lg p-5 shadow-md animation`}
@@ -561,7 +580,6 @@ const DashBoard = () => {
                 className={`h-auto w-full mb-3 ${lightTheme ? "bg-slate-900 text-white" : "bg-white"
                   } rounded-lg p-5 shadow-md animation`}
               >
-                {/* Header */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xl md:text-3xl font-bold mb-5 flex items-center gap-2">
@@ -577,33 +595,25 @@ const DashBoard = () => {
                       Books Corner
                     </p>
                   </div>
-
-                  {/* View All button */}
                   <Link
                     to="/books"
                     className={`px-2 py-1 md:px-3 md:py-2 ${lightTheme
-                        ? "bg-blue-500 text-white hover:bg-blue-700"
-                        : "bg-indigo-500 hover:bg-indigo-700 text-white"
+                      ? "bg-blue-500 text-white hover:bg-blue-700"
+                      : "bg-indigo-500 hover:bg-indigo-700 text-white"
                       } font-medium rounded-md cursor-pointer mb-2 animation`}
                   >
                     View All
                   </Link>
                 </div>
-
-                {/* Books Row */}
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(6rem,1fr))] sm:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-6 pb-3 p-4 pt-7">
                   {books && books.length > 0 ? (
                     books.slice(31, 40).map((book, index) => (
                       <div key={index} className="flex flex-col items-center">
-                        {/* Circle Image */}
                         <div
-                          className={`w-20 h-20 sm:w-24 sm:h-24 md:w-35 md:h-35 
-  rounded-full overflow-hidden shadow-lg border-2 
-  ${lightTheme
-                              ? "border-indigo-500 hover:border-indigo-400 hover:shadow-indigo-500 shadow-md"
-                              : "border-blue-600 hover:border-blue-400 hover:shadow-blue-500 shadow-md"
-                            } 
-  transform transition duration-200 ease-in hover:scale-105 cursor-pointer`}
+                          className={`w-20 h-20 sm:w-24 sm:h-24 md:w-35 md:h-35 rounded-full overflow-hidden shadow-lg border-2 ${lightTheme
+                            ? "border-indigo-500 hover:border-indigo-400 hover:shadow-indigo-500 shadow-md"
+                            : "border-blue-600 hover:border-blue-400 hover:shadow-blue-500 shadow-md"
+                            } transform transition duration-200 ease-in hover:scale-105 cursor-pointer`}
                         >
                           <img
                             src={book.img || "https://via.placeholder.com/150"}
@@ -611,7 +621,6 @@ const DashBoard = () => {
                             className="w-full h-full object-fit"
                           />
                         </div>
-                        {/* Title */}
                         <p
                           className="mt-5 text-xs sm:text-sm font-medium text-center truncate w-full"
                           title={book.title}
@@ -632,12 +641,10 @@ const DashBoard = () => {
                 </div>
               </section>
 
-              {/* Recent Memebers */}
+              {/* Recent Members */}
               <section
-                className={`w-full flex-1 ${lightTheme ? "bg-slate-900 text-white" : "bg-white"
-                  } rounded-2xl p-6 shadow-lg animation`}
+                className={`w-full flex-1 ${lightTheme ? "bg-slate-900 text-white" : "bg-white"} rounded-2xl p-6 shadow-lg animation`}
               >
-                {/* Header */}
                 <section className="flex items-center justify-between">
                   <div>
                     <h2 className="text-xl md:text-3xl font-bold mb-5 flex items-center gap-2">
@@ -645,8 +652,7 @@ const DashBoard = () => {
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
                         fill="currentColor"
-                        className={`w-8 h-8 ${lightTheme ? "text-blue-500" : "text-indigo-500"
-                          }`}
+                        className={`w-8 h-8 ${lightTheme ? "text-blue-500" : "text-indigo-500"}`}
                       >
                         <path
                           fillRule="evenodd"
@@ -657,39 +663,46 @@ const DashBoard = () => {
                       Recent Members
                     </h2>
                   </div>
-
-                  {/* View All button */}
                   <Link
                     to="/members"
                     className={`px-2 py-1 md:px-3 md:py-2 ${lightTheme
-                        ? "bg-blue-500 text-white hover:bg-blue-700"
-                        : "bg-indigo-500 hover:bg-indigo-700 text-white"
+                      ? "bg-blue-500 text-white hover:bg-blue-700"
+                      : "bg-indigo-500 hover:bg-indigo-700 text-white"
                       } font-medium rounded-md cursor-pointer mb-2 animation`}
                   >
                     View All
                   </Link>
                 </section>
-
-                {/* Member List */}
                 <ul className="space-y-3">
                   {members.length > 0 ? (
                     members.slice(0, 5).map((member, i) => (
                       <li
                         key={i}
                         className={`p-4 rounded-xl shadow-sm flex justify-between items-center border animation ${lightTheme
-                            ? "bg-slate-800 border-slate-700 hover:bg-slate-700"
-                            : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                          ? "bg-slate-800 border-slate-700 hover:bg-slate-700"
+                          : "bg-gray-50 border-gray-200 hover:bg-gray-100"
                           }`}
                       >
-                        {/* Left side - Member Avatar + Name */}
                         <div className="flex items-center gap-3">
                           <div
                             className={`w-10 h-10 flex items-center justify-center rounded-full font-bold text-sm ${lightTheme
-                                ? "bg-slate-700 text-blue-300"
-                                : "bg-indigo-100 text-indigo-600"
+                              ? "bg-slate-700 text-blue-300"
+                              : "bg-indigo-100 text-indigo-600"
                               } animation`}
                           >
-                            {member.name?.charAt(0).toUpperCase()}
+                            {member.profileImage ? (
+                              <img
+                                src={member.profileImage}
+                                alt={`${member.name}'s profile`}
+                                className="w-10 h-10 rounded-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none'; // Hide the img element
+                                  e.target.parentElement.textContent = member.name?.charAt(0).toUpperCase() || ''; // Show initial
+                                }}
+                              />
+                            ) : (
+                              <span>{member.name?.charAt(0).toUpperCase() || ''}</span>
+                            )}
                           </div>
                           <div>
                             <span className="font-medium text-base md:text-lg block truncate max-w-[200px]">
@@ -700,12 +713,10 @@ const DashBoard = () => {
                             </span>
                           </div>
                         </div>
-
-                        {/* Right side - Role/Status */}
                         <span
                           className={`px-3 w-20 text-center py-2 rounded-full text-xs font-semibold tracking-wide ${member.status === "active"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
                             } capitalize`}
                         >
                           {member.status}
@@ -716,7 +727,7 @@ const DashBoard = () => {
                     <div className="flex items-center justify-center">
                       <img
                         src={membersFallback}
-                        alt="Loading Books"
+                        alt="No members available"
                         className="w-40 h-40"
                       />
                     </div>
