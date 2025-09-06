@@ -1,11 +1,9 @@
-
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import { v4 as uuidv4 } from "uuid";
 
 const membersUrl = "https://smart-shelf-server-qm2u.onrender.com/members";
 
-//  Fetch all members
+// Fetch all members
 export const fetchMembers = createAsyncThunk(
     "members/fetchMembers",
     async (_, { rejectWithValue }) => {
@@ -13,29 +11,36 @@ export const fetchMembers = createAsyncThunk(
             const response = await axios.get(membersUrl);
             return response.data;
         } catch (error) {
-            console.error("Fetch Members error:", error.response?.data || error.message);
-            return rejectWithValue(
-                error.response?.data?.message || "Error fetching Members"
-            );
+            console.error("Fetch Members error:", {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+            });
+            return rejectWithValue(error.response?.data?.message || "Error fetching Members");
         }
     }
 );
 
-//  Add member
+// Add member
 export const addMembers = createAsyncThunk(
     "members/addMembers",
-    async (MemberData, { rejectWithValue }) => {
+    async (MemberData, { rejectWithValue }, retries = 3) => {
         try {
-            const MemberWithId = { id: uuidv4(), ...MemberData };
-            const response = await axios.post(membersUrl, MemberWithId, {
+            const response = await axios.post(membersUrl, MemberData, {
                 headers: { "Content-Type": "application/json" },
             });
             return response.data;
         } catch (error) {
-            console.error("Add Members error:", error.response?.data || error.message);
-            return rejectWithValue(
-                error.response?.data?.message || "Error adding Members"
-            );
+            console.error("Add Members error:", {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+            });
+            if (error.response?.status >= 500 && retries > 0) {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+                return addMembers(MemberData, { rejectWithValue }, retries - 1);
+            }
+            return rejectWithValue(error.response?.data?.message || "Error adding Members");
         }
     }
 );
@@ -43,37 +48,48 @@ export const addMembers = createAsyncThunk(
 // Delete member
 export const deleteMember = createAsyncThunk(
     "members/deleteMembers",
-    async (id, { rejectWithValue }) => {
+    async (id, { rejectWithValue }, retries = 3) => {
         try {
             await axios.delete(`${membersUrl}/${id}`);
             return id;
         } catch (error) {
-            console.error("Delete Members error:", error.response?.data || error.message);
-            return rejectWithValue(
-                error.response?.data?.message || "Error deleting Members"
-            );
+            console.error("Delete Members error:", {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+            });
+            if (error.response?.status >= 500 && retries > 0) {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+                return deleteMember(id, { rejectWithValue }, retries - 1);
+            }
+            return rejectWithValue(error.response?.data?.message || "Error deleting Members");
         }
     }
 );
 
-//  Update member
+// Update member
 export const updateMember = createAsyncThunk(
     "members/updateMember",
-    async ({ id, updatedData }, { rejectWithValue }) => {
+    async ({ id, updatedData }, { rejectWithValue }, retries = 3) => {
         try {
             const response = await axios.put(`${membersUrl}/${id}`, updatedData, {
                 headers: { "Content-Type": "application/json" },
             });
             return response.data;
         } catch (error) {
-            console.error("Update Member error:", error.response?.data || error.message);
-            return rejectWithValue(
-                error.response?.data?.message || "Error updating Member"
-            );
+            console.error("Update Member error:", {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+            });
+            if (error.response?.status >= 500 && retries > 0) {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+                return updateMember({ id, updatedData }, { rejectWithValue }, retries - 1);
+            }
+            return rejectWithValue(error.response?.data?.message || "Error updating Member");
         }
     }
 );
-
 
 const initialState = {
     members: [],
@@ -91,7 +107,7 @@ const MemberSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            //  Fetch
+            // Fetch
             .addCase(fetchMembers.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -104,8 +120,7 @@ const MemberSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
-
-            //  Add
+            // Add
             .addCase(addMembers.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -122,8 +137,7 @@ const MemberSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
-
-            //  Delete
+            // Delete
             .addCase(deleteMember.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -136,8 +150,7 @@ const MemberSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
-            
-            // update
+            // Update
             .addCase(updateMember.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -152,7 +165,6 @@ const MemberSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             });
-
     },
 });
 

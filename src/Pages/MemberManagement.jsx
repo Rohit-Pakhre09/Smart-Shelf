@@ -4,7 +4,7 @@ import Sidebar from "../components/Sidebar";
 import { AppContext } from "../contexts/AppProvider";
 import Footer from "../components/Footer";
 import { useDispatch } from "react-redux";
-import { deleteMember, addMembers, updateMember } from "../modules/MemberSlice";
+import { fetchMembers, deleteMember, addMembers, updateMember } from "../modules/MemberSlice";
 import {
   Mail,
   Phone,
@@ -18,6 +18,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import membersFallback from "../assets/membersPageFallback.svg";
 
@@ -38,39 +40,29 @@ const MemberManagement = () => {
   const [modalType, setModalType] = useState("");
   const [error, setError] = useState(null);
   const itemsPerPage = 10;
-
-  const membersUrl = "https://smart-shelf-server-ykc7.onrender.com/members";
   const dispatch = useDispatch();
 
+  const membersUrl = "https://smart-shelf-server-qm2u.onrender.com/members";
+
+  // Fetch members using Redux thunk
   useEffect(() => {
-    const fetchMembers = async (retries = 3) => {
-      try {
-        const res = await fetch(membersUrl);
-        if (!res.ok) {
-          if (retries > 0 && res.status >= 500) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            return fetchMembers(retries - 1);
-          }
-          throw new Error(`Failed to fetch members: ${res.status} ${res.statusText}`);
-        }
-        const data = await res.json();
+    dispatch(fetchMembers()).unwrap()
+      .then((data) => {
         setMembers(Array.isArray(data) ? data : []);
-      } catch (err) {
+        setLoading(false);
+      })
+      .catch((err) => {
         console.error("Error fetching members:", err);
         setError("Failed to load members. Please try again later.");
-      } finally {
         setLoading(false);
-      }
-    };
+      });
+  }, [dispatch]);
 
-    fetchMembers();
-  }, []);
-
+  // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
     }, 500);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
@@ -164,26 +156,18 @@ const MemberManagement = () => {
   };
 
   const handleDeleteMember = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this member?")) return;
-    const originalMembers = [...members]; // For rollback
-    setMembers((prev) => prev.filter((m) => m.id !== id)); // Optimistic update
+    const originalMembers = [...members];
+    setMembers((prev) => prev.filter((m) => m.id !== id));
     try {
-      const res = await fetch(`${membersUrl}/${id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (res.status === 404) {
-          setError("Member not found. It may have been deleted already.");
-        } else {
-          throw new Error(`Failed to delete member: ${res.status} ${res.statusText}`);
-        }
-        setMembers(originalMembers); // Rollback
-        return;
-      }
-      dispatch(deleteMember(id));
+      await dispatch(deleteMember(id)).unwrap();
       setError(null);
     } catch (err) {
       console.error("Error deleting member:", err);
-      setError("Failed to delete member. Please try again.");
-      setMembers(originalMembers); // Rollback
+      setError("Failed to delete member. It may have been deleted already. Refreshing list...");
+      setMembers(originalMembers);
+      dispatch(fetchMembers()).unwrap()
+        .then((data) => setMembers(Array.isArray(data) ? data : []))
+        .catch((err) => setError("Failed to refresh members."));
     }
   };
 
@@ -193,7 +177,9 @@ const MemberManagement = () => {
         ? "bg-green-800 text-green-100"
         : "bg-green-200 text-green-700";
     }
-    return lightTheme ? "bg-red-800 text-red-100" : "bg-red-200 text-red-700";
+    return lightTheme
+      ? "bg-red-800 text-red-100"
+      : "bg-red-200 text-red-700";
   };
 
   const handleImageError = (memberId) => {
@@ -202,12 +188,11 @@ const MemberManagement = () => {
 
   const MemberModal = () => {
     const [formData, setFormData] = useState({
-      id: "",
       name: "",
       email: "",
       phone: "",
       address: "",
-      membershipType: "basic",
+      membershipType: "Student",
       status: "active",
       joinDate: new Date().toISOString().split("T")[0],
       membershipExpiry: "",
@@ -225,7 +210,7 @@ const MemberManagement = () => {
           email: selectedMember.email || "",
           phone: selectedMember.phone || "",
           address: selectedMember.address || "",
-          membershipType: selectedMember.membershipType || "basic",
+          membershipType: selectedMember.membershipType || "Student",
           status: selectedMember.status || "active",
           joinDate: selectedMember.joinDate
             ? new Date(selectedMember.joinDate).toISOString().split("T")[0]
@@ -234,16 +219,15 @@ const MemberManagement = () => {
             ? new Date(selectedMember.membershipExpiry).toISOString().split("T")[0]
             : "",
           profileImage: selectedMember.profileImage || "",
-          outstandingFines: selectedMember.outstandingFines || 0,
+          outstandingFines: Number(selectedMember.outstandingFines) || 0,
         });
       } else {
         setFormData({
-          id: "",
           name: "",
           email: "",
           phone: "",
           address: "",
-          membershipType: "basic",
+          membershipType: "Student",
           status: "active",
           joinDate: new Date().toISOString().split("T")[0],
           membershipExpiry: "",
@@ -256,13 +240,15 @@ const MemberManagement = () => {
 
     const handleChange = (e) => {
       const { name, value } = e.target;
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({
+        ...prev,
+        [name]: name === "outstandingFines" ? Number(value) : value,
+      }));
       setFormError(null);
       setError(null);
     };
 
     const validateForm = () => {
-      if (!formData.id.trim() && modalType === "add") return "Member ID is required";
       if (!formData.name.trim()) return "Name is required";
       if (!formData.email.trim() || !/^\S+@\S+\.\S+$/.test(formData.email))
         return "Valid email is required";
@@ -270,12 +256,15 @@ const MemberManagement = () => {
         return "Valid phone number (7-15 digits) is required";
       if (!formData.address.trim()) return "Address is required";
       if (!formData.joinDate) return "Join date is required";
+      if (!formData.membershipType) return "Membership type is required";
       if (formData.profileImage && !/^https?:\/\/\S+$/.test(formData.profileImage))
         return "Valid profile image URL is required";
+      if (isNaN(formData.outstandingFines) || formData.outstandingFines < 0)
+        return "Valid outstanding fines (non-negative number) is required";
       return null;
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e, retries = 3) => {
       e.preventDefault();
       const validationError = validateForm();
       if (validationError) {
@@ -285,42 +274,28 @@ const MemberManagement = () => {
 
       setIsSubmitting(true);
       try {
+        const payload = { ...formData };
         if (modalType === "add") {
-          const res = await fetch(membersUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
-          });
-          if (!res.ok) {
-            if (res.status === 400) throw new Error("Invalid member data");
-            if (res.status === 409) throw new Error("Member ID already exists");
-            throw new Error(`Failed to add member: ${res.status} ${res.statusText}`);
-          }
-          const newMember = await res.json();
-          setMembers((prev) => [...prev, newMember]);
-          dispatch(addMembers(newMember));
+          delete payload.id; // Ensure id is not sent
+          console.log("Sending request with payload:", JSON.stringify(payload, null, 2));
+          await dispatch(addMembers(payload)).unwrap();
+          dispatch(fetchMembers()).unwrap()
+            .then((data) => setMembers(Array.isArray(data) ? data : []));
         } else if (modalType === "edit" && selectedMember) {
-          const res = await fetch(`${membersUrl}/${selectedMember.id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
-          });
-          if (!res.ok) {
-            if (res.status === 400) throw new Error("Invalid member data");
-            if (res.status === 404) throw new Error("Member not found");
-            throw new Error(`Failed to update member: ${res.status} ${res.statusText}`);
-          }
-          const updatedMember = await res.json();
-          setMembers((prev) =>
-            prev.map((m) => (m.id === updatedMember.id ? updatedMember : m))
-          );
-          dispatch(updateMember({ id: selectedMember.id, updatedData: updatedMember }));
+          await dispatch(updateMember({ id: selectedMember.id, updatedData: payload })).unwrap();
+          dispatch(fetchMembers()).unwrap()
+            .then((data) => setMembers(Array.isArray(data) ? data : []));
         }
         setShowModal(false);
         setError(null);
         setFormError(null);
       } catch (err) {
         console.error("Error saving member:", err);
+        if (err.status >= 500 && retries > 0) {
+          console.warn(`Server error (${err.status}). Retrying... (${retries} attempts left)`);
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          return handleSubmit(e, retries - 1);
+        }
         setFormError(err.message || "Failed to save member. Please try again.");
       } finally {
         setIsSubmitting(false);
@@ -347,7 +322,7 @@ const MemberManagement = () => {
             </h2>
             <button
               aria-label="Close modal"
-              className="text-gray-400 hover:text-red-500"
+              className="text-gray-400 hover:text-red-500 transition-colors"
               onClick={() => setShowModal(false)}
               disabled={isSubmitting}
             >
@@ -369,37 +344,14 @@ const MemberManagement = () => {
 
           {formError && (
             <div
-              className={`p-2 rounded-lg text-sm mb-4 
+              className={`p-2 rounded-lg text-sm mb-4
                 ${lightTheme ? "bg-red-800 text-red-100" : "bg-red-200 text-red-700"}`}
             >
               {formError}
             </div>
           )}
 
-          <form className="flex flex-col gap-3 sm:gap-4" onSubmit={handleSubmit}>
-            {modalType === "add" && (
-              <div>
-                <label htmlFor="id" className="block text-sm font-medium mb-1 opacity-80">
-                  Member ID
-                </label>
-                <input
-                  id="id"
-                  type="text"
-                  name="id"
-                  placeholder="Member ID (e.g., M001)"
-                  value={formData.id}
-                  onChange={handleChange}
-                  required
-                  aria-required="true"
-                  disabled={isSubmitting}
-                  className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
-                    ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
-                      : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
-                    } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
-                />
-              </div>
-            )}
+          <div className="flex flex-col gap-3 sm:gap-4">
             {modalType === "edit" && (
               <div>
                 <label htmlFor="id" className="block text-sm font-medium mb-1 opacity-80">
@@ -433,7 +385,7 @@ const MemberManagement = () => {
                 required
                 aria-required="true"
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
                     : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
@@ -454,7 +406,7 @@ const MemberManagement = () => {
                 required
                 aria-required="true"
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
                     : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
@@ -475,7 +427,7 @@ const MemberManagement = () => {
                 required
                 aria-required="true"
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
                     : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
@@ -496,12 +448,35 @@ const MemberManagement = () => {
                 aria-required="true"
                 rows={3}
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition resize-none 
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition resize-none
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
                     : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
                   } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
               />
+            </div>
+            <div>
+              <label htmlFor="membershipType" className="block text-sm font-medium mb-1 opacity-80">
+                Membership Type
+              </label>
+              <select
+                id="membershipType"
+                name="membershipType"
+                value={formData.membershipType}
+                onChange={handleChange}
+                required
+                aria-required="true"
+                disabled={isSubmitting}
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
+                  ${lightTheme
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-gray-50 text-gray-900 border-gray-300"
+                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <option value="Student">Student</option>
+                <option value="Faculty">Faculty</option>
+                <option value="Public">Public</option>
+              </select>
             </div>
             <div>
               <label htmlFor="status" className="block text-sm font-medium mb-1 opacity-80">
@@ -513,7 +488,7 @@ const MemberManagement = () => {
                 value={formData.status}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600"
                     : "bg-gray-50 text-gray-900 border-gray-300"
@@ -536,7 +511,7 @@ const MemberManagement = () => {
                 required
                 aria-required="true"
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600"
                     : "bg-gray-50 text-gray-900 border-gray-300"
@@ -554,7 +529,7 @@ const MemberManagement = () => {
                 value={formData.membershipExpiry}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600"
                     : "bg-gray-50 text-gray-900 border-gray-300"
@@ -573,7 +548,7 @@ const MemberManagement = () => {
                 value={formData.profileImage}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
                     : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
@@ -593,7 +568,7 @@ const MemberManagement = () => {
                 onChange={handleChange}
                 min="0"
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition 
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
                     : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
@@ -605,7 +580,7 @@ const MemberManagement = () => {
                 type="button"
                 onClick={() => setShowModal(false)}
                 disabled={isSubmitting}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 text-sm 
+                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 text-sm
                   ${lightTheme
                     ? "bg-gray-600 text-white hover:bg-gray-700"
                     : "bg-gray-200 text-gray-800 hover:bg-gray-300"
@@ -623,6 +598,7 @@ const MemberManagement = () => {
                     : "bg-indigo-500 text-white hover:bg-indigo-600"
                   } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                 aria-label="Save member"
+                onClick={handleSubmit}
               >
                 {isSubmitting && (
                   <span className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></span>
@@ -630,7 +606,7 @@ const MemberManagement = () => {
                 Save
               </button>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     );
@@ -646,57 +622,58 @@ const MemberManagement = () => {
         <Navbar />
         <section className="flex-1 pt-16 lg:pt-[70px] px-2 sm:px-4 lg:px-6">
           <div
-            className={`h-[87vh] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-6 ${open
-              ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
-              : "lg:ml-20 lg:w-[calc(100%-6rem)]"
+            className={`h-[87vh] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-10 ${open ? "lg:ml-68 lg:w-[calc(100%-17rem)]" : "lg:ml-20 lg:w-[calc(100%-6rem)]"
               }`}
           >
-            <p
-              className={`${lightTheme ? "text-white" : "text-black"} 
-              text-2xl sm:text-3xl pb-3 mt-4 sm:mt-5 px-2 sm:pl-4 font-bold`}
-            >
-              Members Management
-            </p>
+            <div className="flex justify-between items-center">
+              <p
+                className={`${lightTheme ? "text-white" : "text-black"
+                  } text-2xl sm:text-3xl pb-3 mt-4 sm:mt-5 px-2 sm:pl-4 font-bold`}
+              >
+                Members Management
+              </p>
+            </div>
 
             {error && (
               <div
-                className={`p-2 rounded-lg text-sm mx-2 sm:mx-4 mb-4 
-                ${lightTheme ? "bg-red-800 text-red-100" : "bg-red-200 text-red-700"}`}
+                className={`p-2 rounded-lg text-sm mx-2 sm:mx-4 mb-4 ${lightTheme ? "bg-red-800 text-red-100" : "bg-red-200 text-red-700"
+                  }`}
               >
                 {error}
               </div>
             )}
 
-            <div className="min-h-full flex flex-col gap-4 sm:gap-5 p-2 sm:p-3">
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center flex-wrap">
-                <div className="relative w-full sm:w-64">
+            <div className="min-h-auto flex flex-col gap-4 sm:gap-5 p-2 sm:p-3">
+              <div
+                className={`flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center flex-wrap ${lightTheme ? "bg-gray-900" : "bg-neutral-50"
+                  } rounded-lg p-5`}
+              >
+                <div className="relative flex-1 min-w-full lg:min-w-[200px]">
                   <Search
                     size={18}
-                    className={`absolute left-3 top-1/2 transform -translate-y-1/2 
-                    ${lightTheme ? "text-gray-400" : "text-gray-500"}`}
+                    className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${lightTheme ? "text-gray-400" : "text-gray-500"
+                      }`}
                   />
                   <input
                     type="text"
-                    placeholder="Search by member's name..."
+                    placeholder="Search by member's name, email, ID, or phone..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     aria-label="Search members"
-                    className={`pl-10 p-2 rounded-lg w-full text-sm sm:text-base 
-                    ${lightTheme
-                        ? "bg-gray-800 text-white placeholder-gray-400 border border-gray-700"
-                        : "bg-gray-100 text-black placeholder-gray-500 border border-gray-300"
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    className={`pl-10 p-2 rounded-lg w-full text-sm sm:text-base ${lightTheme
+                      ? "bg-gray-800 text-white placeholder-gray-400 border border-gray-700"
+                      : "bg-gray-100 text-black placeholder-gray-500 border border-gray-300"
+                      } focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                   />
                 </div>
                 <select
                   value={membershipFilter}
                   onChange={(e) => setMembershipFilter(e.target.value)}
                   aria-label="Filter by membership type"
-                  className={`p-2 rounded-lg w-full sm:w-40 text-sm sm:text-base 
-                  ${lightTheme
-                      ? "bg-gray-800 text-white border border-gray-700"
-                      : "bg-gray-100 text-black border border-gray-300"
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className={`p-2 rounded-lg w-full sm:w-40 text-sm sm:text-base ${lightTheme
+                    ? "bg-gray-800 text-white border border-gray-700"
+                    : "bg-gray-100 text-black border border-gray-300"
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                 >
                   {membershipTypes.map((type) => (
                     <option key={type} value={type}>
@@ -708,11 +685,10 @@ const MemberManagement = () => {
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   aria-label="Filter by status"
-                  className={`p-2 rounded-lg w-full sm:w-40 text-sm sm:text-base 
-                  ${lightTheme
-                      ? "bg-gray-800 text-white border border-gray-700"
-                      : "bg-gray-100 text-black border border-gray-300"
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className={`p-2 rounded-lg w-full sm:w-40 text-sm sm:text-base ${lightTheme
+                    ? "bg-gray-800 text-white border border-gray-700"
+                    : "bg-gray-100 text-black border border-gray-300"
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                 >
                   {statuses.map((stat) => (
                     <option key={stat} value={stat}>
@@ -724,11 +700,10 @@ const MemberManagement = () => {
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   aria-label="Sort members"
-                  className={`p-2 rounded-lg w-full sm:w-40 text-sm sm:text-base 
-                  ${lightTheme
-                      ? "bg-gray-800 text-white border border-gray-700"
-                      : "bg-gray-100 text-black border border-gray-300"
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className={`p-2 rounded-lg w-full sm:w-40 text-sm sm:text-base ${lightTheme
+                    ? "bg-gray-800 text-white border border-gray-700"
+                    : "bg-gray-100 text-black border border-gray-300"
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                 >
                   <option value="name">Sort by Name</option>
                   <option value="joinDate">Sort by Join Date</option>
@@ -737,10 +712,9 @@ const MemberManagement = () => {
                 </select>
                 <button
                   onClick={handleAddMember}
-                  className={`flex items-center justify-center gap-2 rounded-md shadow-md cursor-pointer w-full sm:w-auto px-3 py-2 text-sm sm:text-base
-                  ${lightTheme
-                      ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                      : "bg-indigo-500 hover:bg-indigo-600 text-white"
+                  className={`flex items-center justify-center gap-2 rounded-md shadow-md w-full sm:w-auto px-3 py-2 text-sm sm:text-base transition-all hover:scale-105 ${lightTheme
+                    ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                    : "bg-indigo-500 hover:bg-indigo-600 text-white"
                     }`}
                   aria-label="Add new member"
                 >
@@ -760,7 +734,7 @@ const MemberManagement = () => {
                       />
                     </svg>
                   </span>
-                  <span className="hidden sm:flex items-center gap-2">
+                  <span className="hidden sm:flex items-center gap-2 cursor-pointer">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-5 w-5"
@@ -789,8 +763,8 @@ const MemberManagement = () => {
                 </div>
               ) : sortedMembers.length === 0 ? (
                 <div
-                  className={`flex flex-col items-center justify-center min-h-[50vh] text-center 
-                  ${lightTheme ? "text-gray-400" : "text-gray-600"}`}
+                  className={`flex flex-col items-center justify-center min-h-[50vh] text-center ${lightTheme ? "text-gray-400" : "text-gray-600"
+                    }`}
                 >
                   <img
                     src={membersFallback}
@@ -802,19 +776,121 @@ const MemberManagement = () => {
                 </div>
               ) : (
                 <>
-                  <div className="overflow-x-auto rounded-lg shadow">
+                  <div className="lg:hidden grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4">
+                    {currentMembers.map((member) => (
+                      <div
+                        key={member.id}
+                        className={`rounded-lg shadow-md p-4 transition-all duration-200 hover:shadow-lg ${lightTheme
+                          ? "bg-gray-800 text-white border border-gray-700"
+                          : "bg-white text-gray-900 border border-gray-200"
+                          }`}
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          {member.profileImage && !brokenImages[member.id] ? (
+                            <img
+                              src={member.profileImage}
+                              alt={member.name || "Member"}
+                              className="w-10 h-10 rounded-full object-cover"
+                              onError={() => handleImageError(member.id)}
+                            />
+                          ) : (
+                            <div
+                              className={`w-10 h-10 flex items-center justify-center rounded-full font-bold text-lg ${lightTheme ? "bg-blue-600 text-white" : "bg-blue-200 text-blue-900"
+                                }`}
+                            >
+                              {member.name?.charAt(0).toUpperCase() || "U"}
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-semibold text-base">{member.name || "Unknown"}</p>
+                            <p className="text-sm text-gray-400">ID: {member.id || "N/A"}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 text-sm">
+                          <p className="flex items-center gap-2">
+                            <Mail size={16} />
+                            <span className="font-medium">Email:</span> {member.email || "N/A"}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <Phone size={16} />
+                            <span className="font-medium">Phone:</span> {member.phone || "N/A"}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <MapPin size={16} className={member.address ? "text-current" : "text-gray-400"} />
+                            <span className="font-medium">Address:</span> {member.address || "N/A"}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <UserCheck size={16} />
+                            <span className="font-medium">Membership:</span>{" "}
+                            {member.membershipType || "N/A"}
+                          </p>
+                          <p className="flex items-center gap-2 text-gray-400">
+                            <Calendar size={14} />
+                            <span className="font-medium">Join Date:</span>{" "}
+                            {member.joinDate || "N/A"}
+                          </p>
+                          <p className="flex items-center gap-2 text-gray-400">
+                            <Clock size={14} />
+                            <span className="font-medium">Expiry:</span>{" "}
+                            {member.membershipExpiry || "N/A"}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusClasses(
+                                member.status
+                              )}`}
+                            >
+                              {member.status || "N/A"}
+                            </span>
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <AlertCircle size={16} />
+                            <span className="font-medium">Fines:</span> ₹
+                            {member.outstandingFines ?? 0}
+                          </p>
+                        </div>
+                        <div className="flex justify-between gap-2 mt-3">
+                          <button
+                            onClick={() => {
+                              setSelectedMember(member);
+                              setModalType("edit");
+                              setShowModal(true);
+                            }}
+                            className="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 flex items-center justify-center gap-2 text-sm"
+                            aria-label={`Edit ${member.name || "member"}`}
+                          >
+                            <Pencil size={16} />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteMember(member.id)}
+                            className="flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 flex items-center justify-center gap-2 text-sm"
+                            aria-label={`Delete ${member.name || "member"}`}
+                          >
+                            <Trash2 size={16} />
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="hidden lg:block overflow-x-auto rounded-lg shadow">
                     <table
-                      className={`hidden md:table w-full border-collapse 
-                      ${lightTheme ? "bg-gray-900 text-white" : "bg-white text-black"}`}
+                      className={`w-full border-collapse ${lightTheme ? "bg-gray-900 text-white" : "bg-white text-black"
+                        }`}
                     >
-                      <thead>
+                      <thead className="sticky top-0 z-10">
                         <tr
-                          className={`${lightTheme ? "bg-gray-800 text-blue-300" : "bg-gray-200 text-blue-700"}`}
+                          className={`${lightTheme ? "bg-gray-800 text-blue-300" : "bg-gray-200 text-blue-700"
+                            }`}
                         >
                           <th
-                            className="p-2 sm:p-3 text-left cursor-pointer"
+                            className="p-3 sm:p-4 text-left cursor-pointer min-w-[180px]"
                             onClick={() => handleSort("name")}
                             scope="col"
+                            tabIndex={0}
+                            onKeyDown={(e) => e.key === "Enter" && handleSort("name")}
                           >
                             Member{" "}
                             {sortBy === "name" &&
@@ -824,16 +900,18 @@ const MemberManagement = () => {
                                 <ArrowDown size={14} className="inline ml-1" />
                               ))}
                           </th>
-                          <th className="p-2 sm:p-3 text-left" scope="col">
+                          <th className="p-3 sm:p-4 text-left min-w-[200px]" scope="col">
                             Contact
                           </th>
-                          <th className="p-2 sm:p-3 text-left" scope="col">
+                          <th className="p-3 sm:p-4 text-left min-w-[150px]" scope="col">
                             Address
                           </th>
                           <th
-                            className="p-2 sm:p-3 text-left cursor-pointer"
+                            className="p-3 sm:p-4 text-left cursor-pointer min-w-[180px]"
                             onClick={() => handleSort("membershipExpiry")}
                             scope="col"
+                            tabIndex={0}
+                            onKeyDown={(e) => e.key === "Enter" && handleSort("membershipExpiry")}
                           >
                             Membership{" "}
                             {sortBy === "membershipExpiry" &&
@@ -843,23 +921,10 @@ const MemberManagement = () => {
                                 <ArrowDown size={14} className="inline ml-1" />
                               ))}
                           </th>
-                          <th className="p-2 sm:p-3 text-left" scope="col">
+                          <th className="p-3 sm:p-4 text-left min-w-[100px]" scope="col">
                             Status
                           </th>
-                          <th
-                            className="p-2 sm:p-3 text-left cursor-pointer"
-                            onClick={() => handleSort("outstandingFines")}
-                            scope="col"
-                          >
-                            Fines{" "}
-                            {sortBy === "outstandingFines" &&
-                              (sortDir === "asc" ? (
-                                <ArrowUp size={14} className="inline ml-1" />
-                              ) : (
-                                <ArrowDown size={14} className="inline ml-1" />
-                              ))}
-                          </th>
-                          <th className="p-2 sm:p-3 text-center" scope="col">
+                          <th className="p-3 sm:p-4 text-center min-w-[120px]" scope="col">
                             Actions
                           </th>
                         </tr>
@@ -868,12 +933,10 @@ const MemberManagement = () => {
                         {currentMembers.map((member) => (
                           <tr
                             key={member.id}
-                            className={`border-b ${lightTheme
-                              ? "border-gray-700 hover:bg-gray-800"
-                              : "border-gray-200 hover:bg-gray-100"
+                            className={`border-b transition-all duration-200 ${lightTheme ? "border-gray-700 hover:bg-gray-800" : "border-gray-200 hover:bg-gray-100"
                               }`}
                           >
-                            <td className="p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
+                            <td className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
                               {member.profileImage && !brokenImages[member.id] ? (
                                 <img
                                   src={member.profileImage}
@@ -883,51 +946,54 @@ const MemberManagement = () => {
                                 />
                               ) : (
                                 <div
-                                  className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full font-bold text-base sm:text-lg 
-                                  ${lightTheme ? "bg-blue-600 text-white" : "bg-blue-200 text-blue-900"}`}
+                                  className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full font-bold text-base sm:text-lg ${lightTheme ? "bg-blue-600 text-white" : "bg-blue-200 text-blue-900"
+                                    }`}
                                 >
                                   {member.name?.charAt(0).toUpperCase() || "U"}
                                 </div>
                               )}
-                              <div>
-                                <p className="font-semibold text-sm sm:text-base">{member.name || "Unknown"}</p>
-                                <p className="text-xs sm:text-sm text-gray-400">ID: {member.id || "N/A"}</p>
+                              <div className="truncate max-w-[200px]">
+                                <p className="font-semibold text-sm sm:text-base truncate">
+                                  {member.name || "Unknown"}
+                                </p>
+                                <p className="text-xs sm:text-sm text-gray-400 truncate">
+                                  ID: {member.id || "N/A"}
+                                </p>
                               </div>
                             </td>
-                            <td className="p-2 sm:p-3">
-                              <p className="flex items-center gap-1 text-xs sm:text-sm">
-                                <Mail size={14} /> {member.email || "N/A"}
+                            <td className="p-3 sm:p-4">
+                              <p className="flex items-center gap-1 text-xs sm:text-sm truncate max-w-[200px]">
+                                <Mail size={16} /> {member.email || "N/A"}
                               </p>
-                              <p className="flex items-center gap-1 text-xs sm:text-sm">
-                                <Phone size={14} /> {member.phone || "N/A"}
-                              </p>
-                            </td>
-                            <td className="p-2 sm:p-3 text-xs sm:text-sm flex items-center gap-1">
-                              <MapPin size={14} /> {member.address || "N/A"}
-                            </td>
-                            <td className="p-2 sm:p-3 text-xs sm:text-sm">
-                              <p className="flex items-center gap-1">
-                                <UserCheck size={14} /> {member.membershipType || "N/A"}
-                              </p>
-                              <p className="flex items-center gap-1 text-xs text-gray-400">
-                                <Calendar size={12} /> {member.joinDate || "N/A"}
-                              </p>
-                              <p className="flex items-center gap-1 text-xs text-gray-400">
-                                <Clock size={12} /> Exp: {member.membershipExpiry || "N/A"}
+                              <p className="flex items-center gap-1 text-xs sm:text-sm truncate max-w-[200px]">
+                                <Phone size={16} /> {member.phone || "N/A"}
                               </p>
                             </td>
-                            <td className="p-2 sm:p-3">
+                            <td className="p-3 sm:p-4 text-xs sm:text-sm flex items-center gap-1 max-w-[150px]">
+                              <MapPin size={16} className={member.address ? "text-current" : "text-gray-400"} />
+                              {member.address || "N/A"}
+                            </td>
+                            <td className="p-3 sm:p-4 text-xs sm:text-sm">
+                              <p className="flex items-center gap-1 truncate max-w-[180px]">
+                                <UserCheck size={16} /> {member.membershipType || "N/A"}
+                              </p>
+                              <p className="flex items-center gap-1 text-xs text-gray-400 truncate max-w-[180px]">
+                                <Calendar size={14} /> {member.joinDate || "N/A"}
+                              </p>
+                              <p className="flex items-center gap-1 text-xs text-gray-400 truncate max-w-[180px]">
+                                <Clock size={14} /> Exp: {member.membershipExpiry || "N/A"}
+                              </p>
+                            </td>
+                            <td className="p-3 sm:p-4 capitalize">
                               <span
-                                className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold 
-                                ${getStatusClasses(member.status)}`}
+                                className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold capitalize ${getStatusClasses(
+                                  member.status
+                                )}`}
                               >
                                 {member.status || "N/A"}
                               </span>
                             </td>
-                            <td className="p-2 sm:p-3 flex items-center gap-1 text-xs sm:text-sm">
-                              <AlertCircle size={14} /> ₹{member.outstandingFines ?? 0}
-                            </td>
-                            <td className="p-2 sm:p-3">
+                            <td className="p-3 sm:p-4">
                               <div className="flex justify-center gap-1 sm:gap-2">
                                 <button
                                   onClick={() => {
@@ -935,17 +1001,17 @@ const MemberManagement = () => {
                                     setModalType("edit");
                                     setShowModal(true);
                                   }}
-                                  className="px-2 sm:px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-xs sm:text-sm"
-                                  aria-label={`Edit ${member.name || "member"} cursor-pointer`}
+                                  className="px-2 sm:px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-xs sm:text-sm transition-all duration-200 cursor-pointer"
+                                  aria-label={`Edit ${member.name || "member"}`}
                                 >
-                                  Edit
+                                  <Pencil size={16} />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteMember(member.id)}
-                                  className="px-2 sm:px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs sm:text-sm"
+                                  className="px-2 sm:px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs sm:text-sm transition-all duration-200 cursor-pointer"
                                   aria-label={`Delete ${member.name || "member"}`}
                                 >
-                                  Delete
+                                  <Trash2 size={16} />
                                 </button>
                               </div>
                             </td>
@@ -953,90 +1019,6 @@ const MemberManagement = () => {
                         ))}
                       </tbody>
                     </table>
-
-                    <div className="grid md:hidden gap-3 sm:gap-4">
-                      {currentMembers.map((member) => (
-                        <div
-                          key={member.id}
-                          className={`p-3 sm:p-4 rounded-lg shadow 
-                          ${lightTheme ? "bg-gray-900 text-white" : "bg-white text-black"}`}
-                        >
-                          <div className="flex items-center gap-2 sm:gap-3 mb-2">
-                            {member.profileImage && !brokenImages[member.id] ? (
-                              <img
-                                src={member.profileImage}
-                                alt={member.name || "Member"}
-                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
-                                onError={() => handleImageError(member.id)}
-                              />
-                            ) : (
-                              <div
-                                className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full font-bold text-base sm:text-lg 
-                                ${lightTheme ? "bg-blue-600 text-white" : "bg-blue-200 text-blue-900"}`}
-                              >
-                                {member.name?.charAt(0).toUpperCase() || "U"}
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-semibold text-sm sm:text-base">{member.name || "Unknown"}</p>
-                              <p className="text-xs sm:text-sm text-gray-400">ID: {member.id || "N/A"}</p>
-                            </div>
-                          </div>
-                          <p className="flex items-center gap-1 text-xs sm:text-sm mb-1">
-                            <Mail size={14} /> {member.email || "N/A"}
-                          </p>
-                          <p className="flex items-center gap-1 text-xs sm:text-sm mb-1">
-                            <Phone size={14} /> {member.phone || "N/A"}
-                          </p>
-                          <p className="flex items-center gap-1 text-xs sm:text-sm mb-1">
-                            <MapPin size={14} /> {member.address || "N/A"}
-                          </p>
-                          <div className="text-xs sm:text-sm mb-2">
-                            <p className="flex items-center gap-1">
-                              <UserCheck size={14} /> {member.membershipType || "N/A"}
-                            </p>
-                            <p className="flex items-center gap-1 text-xs text-gray-400">
-                              <Calendar size={12} /> {member.joinDate || "N/A"}
-                            </p>
-                            <p className="flex items-center gap-1 text-xs text-gray-400">
-                              <Clock size={12} /> Exp: {member.membershipExpiry || "N/A"}
-                            </p>
-                          </div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span
-                              className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${getStatusClasses(
-                                member.status
-                              )} capitalize`}
-                            >
-                              {member.status || "N/A"}
-                            </span>
-                            <span className="flex items-center gap-1 text-xs sm:text-sm">
-                              <AlertCircle size={14} /> ₹{member.outstandingFines ?? 0}
-                            </span>
-                          </div>
-                          <div className="flex gap-1 sm:gap-2">
-                            <button
-                              onClick={() => {
-                                setSelectedMember(member);
-                                setModalType("edit");
-                                setShowModal(true);
-                              }}
-                              className="flex-1 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-xs sm:text-sm"
-                              aria-label={`Edit ${member.name || "member"}`}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteMember(member.id)}
-                              className="flex-1 py-1.5 sm:py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs sm:text-sm"
-                              aria-label={`Delete ${member.name || "member"}`}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
 
                   {totalPages > 1 && (
@@ -1044,10 +1026,9 @@ const MemberManagement = () => {
                       <button
                         disabled={currentPage === 1}
                         onClick={() => setCurrentPage((p) => p - 1)}
-                        className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 
-                        ${lightTheme
-                            ? "bg-gray-800 text-white hover:bg-gray-700"
-                            : "bg-gray-100 text-black hover:bg-gray-200"
+                        className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all duration-200 ${lightTheme
+                          ? "bg-gray-800 text-white hover:bg-gray-700"
+                          : "bg-gray-100 text-black hover:bg-gray-200"
                           }`}
                         aria-label="Previous page"
                       >
@@ -1057,14 +1038,13 @@ const MemberManagement = () => {
                         <button
                           key={i}
                           onClick={() => setCurrentPage(i + 1)}
-                          className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm 
-                          ${currentPage === i + 1
-                              ? lightTheme
-                                ? "bg-blue-600 text-white"
-                                : "bg-blue-200 text-blue-900"
-                              : lightTheme
-                                ? "bg-gray-800 text-white hover:bg-gray-700"
-                                : "bg-gray-100 text-black hover:bg-gray-200"
+                          className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 ${currentPage === i + 1
+                            ? lightTheme
+                              ? "bg-blue-600 text-white"
+                              : "bg-blue-200 text-blue-900"
+                            : lightTheme
+                              ? "bg-gray-800 text-white hover:bg-gray-700"
+                              : "bg-gray-100 text-black hover:bg-gray-200"
                             }`}
                           aria-label={`Page ${i + 1}`}
                           aria-current={currentPage === i + 1 ? "page" : undefined}
@@ -1075,10 +1055,9 @@ const MemberManagement = () => {
                       <button
                         disabled={currentPage === totalPages}
                         onClick={() => setCurrentPage((p) => p + 1)}
-                        className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 
-                        ${lightTheme
-                            ? "bg-gray-800 text-white hover:bg-gray-700"
-                            : "bg-gray-100 text-black hover:bg-gray-200"
+                        className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all duration-200 ${lightTheme
+                          ? "bg-gray-800 text-white hover:bg-gray-700"
+                          : "bg-gray-100 text-black hover:bg-gray-200"
                           }`}
                         aria-label="Next page"
                       >
@@ -1086,10 +1065,10 @@ const MemberManagement = () => {
                       </button>
                     </div>
                   )}
+                  <Footer />
                 </>
               )}
             </div>
-            <Footer />
           </div>
         </section>
         {showModal && <MemberModal />}

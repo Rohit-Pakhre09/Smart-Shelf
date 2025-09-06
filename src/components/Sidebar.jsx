@@ -46,29 +46,10 @@ const Sidebar = () => {
         </svg>
       ),
     },
+
     {
-      name: "Members",
-      path: "/members",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M12 12a4 4 0 100-8 4 4 0 000 8z"
-          />
-        </svg>
-      ),
-    },
-    {
-      name: "Borrowed Books",
-      path: "/borrowedbooks",
+      name: "Issued Books",
+      path: "/issuedBooks",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -85,6 +66,26 @@ const Sidebar = () => {
             fillRule="evenodd"
             d="M12 2.25a.75.75 0 0 1 .75.75v6.44l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 1.06-1.06l1.72 1.72V3a.75.75 0 0 1 .75-.75Z"
             clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Members",
+      path: "/members",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M12 12a4 4 0 100-8 4 4 0 000 8z"
           />
         </svg>
       ),
@@ -132,13 +133,11 @@ const Sidebar = () => {
           {/* Logo and toggle */}
           <div className="flex items-center justify-between px-4 py-5">
             <p
-              className={`text-3xl font-bold ${
-                lightTheme ? "text-white" : "text-black"
-              } transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap ${
-                open
+              className={`text-3xl font-bold ${lightTheme ? "text-white" : "text-black"
+                } transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap ${open
                   ? "opacity-100 max-w-full sm:text-2xl md:text-3xl"
                   : "opacity-0 max-w-0"
-              }`}
+                }`}
             >
               Smart{" "}
               <span
@@ -151,11 +150,10 @@ const Sidebar = () => {
             {/* Left arrow */}
             {open && (
               <button
-                className={`p-2 rounded-md ${
-                  lightTheme
-                    ? "hover:bg-gray-800"
-                    : "hover:bg-neutral-300 text-black"
-                } transition cursor-pointer duration-500 ease-in-out`}
+                className={`p-2 rounded-md ${lightTheme
+                  ? "hover:bg-gray-800"
+                  : "hover:bg-neutral-300 text-black"
+                  } transition cursor-pointer duration-500 ease-in-out`}
                 onClick={() => setOpen(false)}
               >
                 <svg
@@ -185,22 +183,20 @@ const Sidebar = () => {
                 title={menu.name}
                 className={({ isActive }) =>
                   `flex items-center gap-4 px-5 py-3 mt-3 rounded-md m-2 transition-all duration-300 ease-in cursor-pointer
-        ${
-          isActive
-            ? "bg-blue-600 text-white"
-            : lightTheme
-            ? "hover:bg-gray-800"
-            : "hover:bg-neutral-300 hover:text-black text-black"
-        }`
+        ${isActive
+                    ? "bg-blue-600 text-white"
+                    : lightTheme
+                      ? "hover:bg-gray-800"
+                      : "hover:bg-neutral-300 hover:text-black text-black"
+                  }`
                 }
               >
                 <div className="transition-transform duration-500 ease-in-out">
                   {menu.icon}
                 </div>
                 <span
-                  className={`font-medium transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap ${
-                    open ? "opacity-100 max-w-full" : "opacity-0 max-w-0"
-                  }`}
+                  className={`font-medium transition-all duration-500 ease-in-out overflow-hidden whitespace-nowrap ${open ? "opacity-100 max-w-full" : "opacity-0 max-w-0"
+                    }`}
                 >
                   {menu.name}
                 </span>
@@ -218,11 +214,10 @@ const Sidebar = () => {
               title={menu.name}
               className={({ isActive }) =>
                 `flex items-center gap-4 px-6 py-3 cursor-pointer rounded-md m-2 transition-all duration-300 ease-in
-      ${
-        lightTheme
-          ? "hover:bg-gray-800"
-          : "hover:bg-neutral-300 hover:text-black text-black"
-      }
+      ${lightTheme
+                  ? "hover:bg-gray-800"
+                  : "hover:bg-neutral-300 hover:text-black text-black"
+                }
       ${isActive ? "bg-indigo-500 text-white" : ""}`
               }
             >
@@ -252,19 +247,17 @@ const Sidebar = () => {
         {/* Home SVG after the sidebar close */}
         <div
           title="Home"
-          className={`absolute top-6.5 left-5 transition-all duration-500 ease-in-out ${
-            open
-              ? "opacity-0 pointer-events-none"
-              : "opacity-100 pointer-events-auto"
-          }`}
+          className={`absolute top-6.5 left-5 transition-all duration-500 ease-in-out ${open
+            ? "opacity-0 pointer-events-none"
+            : "opacity-100 pointer-events-auto"
+            }`}
         >
           <button
             onClick={() => setOpen(true)}
-            className={`px-1.5 py-1 rounded-md ${
-              lightTheme
-                ? "hover:bg-gray-800"
-                : "hover:bg-neutral-300 hover:text-black text-black"
-            } transition-all duration-300 ease-in flex items-center justify-center delay-200`}
+            className={`px-1.5 py-1 rounded-md ${lightTheme
+              ? "hover:bg-gray-800"
+              : "hover:bg-neutral-300 hover:text-black text-black"
+              } transition-all duration-300 ease-in flex items-center justify-center delay-200`}
           >
             {/* Library icon */}
             <svg
