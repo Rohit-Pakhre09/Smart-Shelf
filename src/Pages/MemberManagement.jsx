@@ -4,7 +4,7 @@ import Sidebar from "../components/Sidebar";
 import { AppContext } from "../contexts/AppProvider";
 import Footer from "../components/Footer";
 import { useDispatch } from "react-redux";
-import { deleteMember, addMembers, updateMember } from "../modules/MemberSlice";
+import { fetchMembers, deleteMember, addMembers, updateMember } from "../modules/MemberSlice";
 import {
   Mail,
   Phone,
@@ -40,39 +40,29 @@ const MemberManagement = () => {
   const [modalType, setModalType] = useState("");
   const [error, setError] = useState(null);
   const itemsPerPage = 10;
-
-  const membersUrl = "https://smart-shelf-server-ykc7.onrender.com/members";
   const dispatch = useDispatch();
 
+  const membersUrl = "https://smart-shelf-server-qm2u.onrender.com/members";
+
+  // Fetch members using Redux thunk
   useEffect(() => {
-    const fetchMembers = async (retries = 3) => {
-      try {
-        const res = await fetch(membersUrl);
-        if (!res.ok) {
-          if (retries > 0 && res.status >= 500) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            return fetchMembers(retries - 1);
-          }
-          throw new Error(`Failed to fetch members: ${res.status} ${res.statusText}`);
-        }
-        const data = await res.json();
+    dispatch(fetchMembers()).unwrap()
+      .then((data) => {
         setMembers(Array.isArray(data) ? data : []);
-      } catch (err) {
+        setLoading(false);
+      })
+      .catch((err) => {
         console.error("Error fetching members:", err);
         setError("Failed to load members. Please try again later.");
-      } finally {
         setLoading(false);
-      }
-    };
+      });
+  }, [dispatch]);
 
-    fetchMembers();
-  }, []);
-
+  // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
     }, 500);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
@@ -166,37 +156,29 @@ const MemberManagement = () => {
   };
 
   const handleDeleteMember = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this member?")) return;
     const originalMembers = [...members];
     setMembers((prev) => prev.filter((m) => m.id !== id));
     try {
-      const res = await fetch(`${membersUrl}/${id}`, { method: "DELETE" });
-      if (!res.ok) {
-        if (res.status === 404) {
-          setError("Member not found. It may have been deleted already.");
-        } else {
-          throw new Error(`Failed to delete member: ${res.status} ${res.statusText}`);
-        }
-        setMembers(originalMembers);
-        return;
-      }
-      dispatch(deleteMember(id));
+      await dispatch(deleteMember(id)).unwrap();
       setError(null);
     } catch (err) {
       console.error("Error deleting member:", err);
-      setError("Failed to delete member. Please try again.");
+      setError("Failed to delete member. It may have been deleted already. Refreshing list...");
       setMembers(originalMembers);
+      dispatch(fetchMembers()).unwrap()
+        .then((data) => setMembers(Array.isArray(data) ? data : []))
+        .catch((err) => setError("Failed to refresh members."));
     }
   };
 
   const getStatusClasses = (status) => {
     if (status === "active") {
       return lightTheme
-        ? "bg-green-800 text-green-100 animation"
+        ? "bg-green-800 text-green-100"
         : "bg-green-200 text-green-700";
     }
     return lightTheme
-      ? "bg-red-800 text-red-100 animation"
+      ? "bg-red-800 text-red-100"
       : "bg-red-200 text-red-700";
   };
 
@@ -206,7 +188,6 @@ const MemberManagement = () => {
 
   const MemberModal = () => {
     const [formData, setFormData] = useState({
-      id: "",
       name: "",
       email: "",
       phone: "",
@@ -238,11 +219,10 @@ const MemberManagement = () => {
             ? new Date(selectedMember.membershipExpiry).toISOString().split("T")[0]
             : "",
           profileImage: selectedMember.profileImage || "",
-          outstandingFines: selectedMember.outstandingFines || 0,
+          outstandingFines: Number(selectedMember.outstandingFines) || 0,
         });
       } else {
         setFormData({
-          id: "",
           name: "",
           email: "",
           phone: "",
@@ -260,13 +240,15 @@ const MemberManagement = () => {
 
     const handleChange = (e) => {
       const { name, value } = e.target;
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({
+        ...prev,
+        [name]: name === "outstandingFines" ? Number(value) : value,
+      }));
       setFormError(null);
       setError(null);
     };
 
     const validateForm = () => {
-      if (!formData.id.trim() && modalType === "add") return "Member ID is required";
       if (!formData.name.trim()) return "Name is required";
       if (!formData.email.trim() || !/^\S+@\S+\.\S+$/.test(formData.email))
         return "Valid email is required";
@@ -277,10 +259,12 @@ const MemberManagement = () => {
       if (!formData.membershipType) return "Membership type is required";
       if (formData.profileImage && !/^https?:\/\/\S+$/.test(formData.profileImage))
         return "Valid profile image URL is required";
+      if (isNaN(formData.outstandingFines) || formData.outstandingFines < 0)
+        return "Valid outstanding fines (non-negative number) is required";
       return null;
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e, retries = 3) => {
       e.preventDefault();
       const validationError = validateForm();
       if (validationError) {
@@ -290,42 +274,28 @@ const MemberManagement = () => {
 
       setIsSubmitting(true);
       try {
+        const payload = { ...formData };
         if (modalType === "add") {
-          const res = await fetch(membersUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
-          });
-          if (!res.ok) {
-            if (res.status === 400) throw new Error("Invalid member data");
-            if (res.status === 409) throw new Error("Member ID already exists");
-            throw new Error(`Failed to add member: ${res.status} ${res.statusText}`);
-          }
-          const newMember = await res.json();
-          setMembers((prev) => [...prev, newMember]);
-          dispatch(addMembers(newMember));
+          delete payload.id; // Ensure id is not sent
+          console.log("Sending request with payload:", JSON.stringify(payload, null, 2));
+          await dispatch(addMembers(payload)).unwrap();
+          dispatch(fetchMembers()).unwrap()
+            .then((data) => setMembers(Array.isArray(data) ? data : []));
         } else if (modalType === "edit" && selectedMember) {
-          const res = await fetch(`${membersUrl}/${selectedMember.id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
-          });
-          if (!res.ok) {
-            if (res.status === 400) throw new Error("Invalid member data");
-            if (res.status === 404) throw new Error("Member not found");
-            throw new Error(`Failed to update member: ${res.status} ${res.statusText}`);
-          }
-          const updatedMember = await res.json();
-          setMembers((prev) =>
-            prev.map((m) => (m.id === updatedMember.id ? updatedMember : m))
-          );
-          dispatch(updateMember({ id: selectedMember.id, updatedData: updatedMember }));
+          await dispatch(updateMember({ id: selectedMember.id, updatedData: payload })).unwrap();
+          dispatch(fetchMembers()).unwrap()
+            .then((data) => setMembers(Array.isArray(data) ? data : []));
         }
         setShowModal(false);
         setError(null);
         setFormError(null);
       } catch (err) {
         console.error("Error saving member:", err);
+        if (err.status >= 500 && retries > 0) {
+          console.warn(`Server error (${err.status}). Retrying... (${retries} attempts left)`);
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          return handleSubmit(e, retries - 1);
+        }
         setFormError(err.message || "Failed to save member. Please try again.");
       } finally {
         setIsSubmitting(false);
@@ -340,7 +310,7 @@ const MemberManagement = () => {
         aria-modal="true"
       >
         <div
-          className={`relative w-full max-w-md sm:max-w-lg rounded-2xl shadow-2xl border overflow-y-auto max-h-[90vh] p-4 sm:p-6 scrollbar-thin animation
+          className={`relative w-full max-w-md sm:max-w-lg rounded-2xl shadow-2xl border overflow-y-auto max-h-[90vh] p-4 sm:p-6 scrollbar-thin
             ${lightTheme
               ? "bg-gray-800 text-white border-gray-700"
               : "bg-white text-gray-900 border-gray-200"
@@ -352,7 +322,7 @@ const MemberManagement = () => {
             </h2>
             <button
               aria-label="Close modal"
-              className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+              className="text-gray-400 hover:text-red-500 transition-colors"
               onClick={() => setShowModal(false)}
               disabled={isSubmitting}
             >
@@ -374,37 +344,14 @@ const MemberManagement = () => {
 
           {formError && (
             <div
-              className={`p-2 rounded-lg text-sm mb-4 animation
+              className={`p-2 rounded-lg text-sm mb-4
                 ${lightTheme ? "bg-red-800 text-red-100" : "bg-red-200 text-red-700"}`}
             >
               {formError}
             </div>
           )}
 
-          <form className="flex flex-col gap-3 sm:gap-4" onSubmit={handleSubmit}>
-            {modalType === "add" && (
-              <div>
-                <label htmlFor="id" className="block text-sm font-medium mb-1 opacity-80">
-                  Member ID
-                </label>
-                <input
-                  id="id"
-                  type="text"
-                  name="id"
-                  placeholder="Member ID (e.g., M001)"
-                  value={formData.id}
-                  onChange={handleChange}
-                  required
-                  aria-required="true"
-                  disabled={isSubmitting}
-                  className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition animation
-                    ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
-                      : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
-                    } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
-                />
-              </div>
-            )}
+          <div className="flex flex-col gap-3 sm:gap-4">
             {modalType === "edit" && (
               <div>
                 <label htmlFor="id" className="block text-sm font-medium mb-1 opacity-80">
@@ -416,7 +363,7 @@ const MemberManagement = () => {
                   name="id"
                   value={formData.id}
                   readOnly
-                  className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border bg-gray-300 text-gray-600 cursor-not-allowed animation
+                  className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border bg-gray-300 text-gray-600 cursor-not-allowed
                     ${lightTheme
                       ? "bg-gray-600 text-gray-300 border-gray-600"
                       : "bg-gray-200 text-gray-600 border-gray-300"
@@ -438,7 +385,7 @@ const MemberManagement = () => {
                 required
                 aria-required="true"
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition animation
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
                     : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
@@ -459,7 +406,7 @@ const MemberManagement = () => {
                 required
                 aria-required="true"
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition animation
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
                     : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
@@ -480,7 +427,7 @@ const MemberManagement = () => {
                 required
                 aria-required="true"
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition animation
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
                     : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
@@ -501,7 +448,7 @@ const MemberManagement = () => {
                 aria-required="true"
                 rows={3}
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition resize-none animation
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition resize-none
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
                     : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
@@ -520,7 +467,7 @@ const MemberManagement = () => {
                 required
                 aria-required="true"
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition animation
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600"
                     : "bg-gray-50 text-gray-900 border-gray-300"
@@ -541,7 +488,7 @@ const MemberManagement = () => {
                 value={formData.status}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition animation
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600"
                     : "bg-gray-50 text-gray-900 border-gray-300"
@@ -564,7 +511,7 @@ const MemberManagement = () => {
                 required
                 aria-required="true"
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition animation
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600"
                     : "bg-gray-50 text-gray-900 border-gray-300"
@@ -582,7 +529,7 @@ const MemberManagement = () => {
                 value={formData.membershipExpiry}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition animation
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600"
                     : "bg-gray-50 text-gray-900 border-gray-300"
@@ -601,7 +548,7 @@ const MemberManagement = () => {
                 value={formData.profileImage}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition animation
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
                     : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
@@ -621,7 +568,7 @@ const MemberManagement = () => {
                 onChange={handleChange}
                 min="0"
                 disabled={isSubmitting}
-                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition animation
+                className={`w-full p-2.5 sm:p-3 rounded-xl text-sm sm:text-base border focus:ring-2 focus:ring-indigo-500 focus:outline-none transition
                   ${lightTheme
                     ? "bg-gray-700 text-white border-gray-600 placeholder-gray-400"
                     : "bg-gray-50 text-gray-900 border-gray-300 placeholder-gray-500"
@@ -633,11 +580,11 @@ const MemberManagement = () => {
                 type="button"
                 onClick={() => setShowModal(false)}
                 disabled={isSubmitting}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 text-sm animation
+                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 text-sm
                   ${lightTheme
                     ? "bg-gray-600 text-white hover:bg-gray-700"
                     : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""} cursor-pointer`}
+                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                 aria-label="Cancel"
               >
                 Cancel
@@ -645,12 +592,13 @@ const MemberManagement = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 text-sm flex items-center gap-2 animation
+                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 text-sm flex items-center gap-2
                   ${lightTheme
                     ? "bg-indigo-600 text-white hover:bg-indigo-700"
                     : "bg-indigo-500 text-white hover:bg-indigo-600"
-                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""} cursor-pointer`}
+                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                 aria-label="Save member"
+                onClick={handleSubmit}
               >
                 {isSubmitting && (
                   <span className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></span>
@@ -658,7 +606,7 @@ const MemberManagement = () => {
                 Save
               </button>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     );
@@ -674,21 +622,21 @@ const MemberManagement = () => {
         <Navbar />
         <section className="flex-1 pt-16 lg:pt-[70px] px-2 sm:px-4 lg:px-6">
           <div
-            className={`h-[87vh] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-10 ${open
-                ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
-                : "lg:ml-20 lg:w-[calc(100%-6rem)]"
+            className={`h-[87vh] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-10 ${open ? "lg:ml-68 lg:w-[calc(100%-17rem)]" : "lg:ml-20 lg:w-[calc(100%-6rem)]"
               }`}
           >
-            <p
-              className={`${lightTheme ? "text-white" : "text-black"
-                } text-2xl sm:text-3xl pb-3 mt-4 sm:mt-5 px-2 sm:pl-4 font-bold animation`}
-            >
-              Members Management
-            </p>
+            <div className="flex justify-between items-center">
+              <p
+                className={`${lightTheme ? "text-white" : "text-black"
+                  } text-2xl sm:text-3xl pb-3 mt-4 sm:mt-5 px-2 sm:pl-4 font-bold`}
+              >
+                Members Management
+              </p>
+            </div>
 
             {error && (
               <div
-                className={`p-2 rounded-lg text-sm mx-2 sm:mx-4 mb-4 animation ${lightTheme ? "bg-red-800 text-red-100" : "bg-red-200 text-red-700"
+                className={`p-2 rounded-lg text-sm mx-2 sm:mx-4 mb-4 ${lightTheme ? "bg-red-800 text-red-100" : "bg-red-200 text-red-700"
                   }`}
               >
                 {error}
@@ -696,11 +644,14 @@ const MemberManagement = () => {
             )}
 
             <div className="min-h-auto flex flex-col gap-4 sm:gap-5 p-2 sm:p-3">
-              <div className={`flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center flex-wrap p-5 rounded-lg ${lightTheme ? "bg-gray-900" : "bg-neutral-50"} animation`}>
-                <div className="relative flex-1 min-w-[200px]">
+              <div
+                className={`flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center flex-wrap ${lightTheme ? "bg-gray-900" : "bg-neutral-50"
+                  } rounded-lg p-5`}
+              >
+                <div className="relative flex-1 min-w-full lg:min-w-[200px]">
                   <Search
                     size={18}
-                    className={`absolute left-3 top-1/2 transform -translate-y-1/2 animation ${lightTheme ? "text-gray-400" : "text-gray-500"
+                    className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${lightTheme ? "text-gray-400" : "text-gray-500"
                       }`}
                   />
                   <input
@@ -709,9 +660,9 @@ const MemberManagement = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     aria-label="Search members"
-                    className={`pl-10 p-2 rounded-lg w-full text-sm sm:text-base animation ${lightTheme
-                        ? "bg-gray-800 text-white placeholder-gray-400 border border-gray-700"
-                        : "bg-gray-100 text-black placeholder-gray-500 border border-gray-300"
+                    className={`pl-10 p-2 rounded-lg w-full text-sm sm:text-base ${lightTheme
+                      ? "bg-gray-800 text-white placeholder-gray-400 border border-gray-700"
+                      : "bg-gray-100 text-black placeholder-gray-500 border border-gray-300"
                       } focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                   />
                 </div>
@@ -719,9 +670,9 @@ const MemberManagement = () => {
                   value={membershipFilter}
                   onChange={(e) => setMembershipFilter(e.target.value)}
                   aria-label="Filter by membership type"
-                  className={`p-2 rounded-lg w-full sm:w-40 text-sm sm:text-base animation ${lightTheme
-                      ? "bg-gray-800 text-white border border-gray-700"
-                      : "bg-gray-100 text-black border border-gray-300"
+                  className={`p-2 rounded-lg w-full sm:w-40 text-sm sm:text-base ${lightTheme
+                    ? "bg-gray-800 text-white border border-gray-700"
+                    : "bg-gray-100 text-black border border-gray-300"
                     } focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                 >
                   {membershipTypes.map((type) => (
@@ -734,9 +685,9 @@ const MemberManagement = () => {
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   aria-label="Filter by status"
-                  className={`p-2 rounded-lg w-full sm:w-40 text-sm sm:text-base animation ${lightTheme
-                      ? "bg-gray-800 text-white border border-gray-700"
-                      : "bg-gray-100 text-black border border-gray-300"
+                  className={`p-2 rounded-lg w-full sm:w-40 text-sm sm:text-base ${lightTheme
+                    ? "bg-gray-800 text-white border border-gray-700"
+                    : "bg-gray-100 text-black border border-gray-300"
                     } focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                 >
                   {statuses.map((stat) => (
@@ -749,9 +700,9 @@ const MemberManagement = () => {
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   aria-label="Sort members"
-                  className={`p-2 rounded-lg w-full sm:w-40 text-sm sm:text-base animation ${lightTheme
-                      ? "bg-gray-800 text-white border border-gray-700"
-                      : "bg-gray-100 text-black border border-gray-300"
+                  className={`p-2 rounded-lg w-full sm:w-40 text-sm sm:text-base ${lightTheme
+                    ? "bg-gray-800 text-white border border-gray-700"
+                    : "bg-gray-100 text-black border border-gray-300"
                     } focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                 >
                   <option value="name">Sort by Name</option>
@@ -761,9 +712,9 @@ const MemberManagement = () => {
                 </select>
                 <button
                   onClick={handleAddMember}
-                  className={`flex items-center justify-center gap-2 rounded-md shadow-md w-full sm:w-auto px-3 py-2 text-sm sm:text-base transition-all hover:scale-105 animation ${lightTheme
-                      ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                      : "bg-indigo-500 hover:bg-indigo-600 text-white"
+                  className={`flex items-center justify-center gap-2 rounded-md shadow-md w-full sm:w-auto px-3 py-2 text-sm sm:text-base transition-all hover:scale-105 ${lightTheme
+                    ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                    : "bg-indigo-500 hover:bg-indigo-600 text-white"
                     }`}
                   aria-label="Add new member"
                 >
@@ -798,7 +749,7 @@ const MemberManagement = () => {
                         d="M12 4v16m8-8H4"
                       />
                     </svg>
-                    Member
+                    Add Member
                   </span>
                 </button>
               </div>
@@ -829,9 +780,9 @@ const MemberManagement = () => {
                     {currentMembers.map((member) => (
                       <div
                         key={member.id}
-                        className={`rounded-lg shadow-md p-4 transition-all duration-200 hover:shadow-lg animation ${lightTheme
-                            ? "bg-gray-800 text-white border border-gray-700"
-                            : "bg-white text-gray-900 border border-gray-200"
+                        className={`rounded-lg shadow-md p-4 transition-all duration-200 hover:shadow-lg ${lightTheme
+                          ? "bg-gray-800 text-white border border-gray-700"
+                          : "bg-white text-gray-900 border border-gray-200"
                           }`}
                       >
                         <div className="flex items-center gap-3 mb-3">
@@ -844,7 +795,7 @@ const MemberManagement = () => {
                             />
                           ) : (
                             <div
-                              className={`w-10 h-10 flex items-center justify-center rounded-full font-bold text-lg animation ${lightTheme ? "bg-blue-600 text-white" : "bg-blue-200 text-blue-900"
+                              className={`w-10 h-10 flex items-center justify-center rounded-full font-bold text-lg ${lightTheme ? "bg-blue-600 text-white" : "bg-blue-200 text-blue-900"
                                 }`}
                             >
                               {member.name?.charAt(0).toUpperCase() || "U"}
@@ -926,12 +877,12 @@ const MemberManagement = () => {
 
                   <div className="hidden lg:block overflow-x-auto rounded-lg shadow">
                     <table
-                      className={`w-full border-collapse animation ${lightTheme ? "bg-gray-900 text-white" : "bg-white text-black"
+                      className={`w-full border-collapse ${lightTheme ? "bg-gray-900 text-white" : "bg-white text-black"
                         }`}
                     >
                       <thead className="sticky top-0 z-10">
                         <tr
-                          className={`animation ${lightTheme ? "bg-gray-800 text-blue-300" : "bg-gray-200 text-blue-700"
+                          className={`${lightTheme ? "bg-gray-800 text-blue-300" : "bg-gray-200 text-blue-700"
                             }`}
                         >
                           <th
@@ -982,7 +933,7 @@ const MemberManagement = () => {
                         {currentMembers.map((member) => (
                           <tr
                             key={member.id}
-                            className={`border-b transition-all duration-200 animation ${lightTheme ? "border-gray-700 hover:bg-gray-800" : "border-gray-200 hover:bg-gray-100"
+                            className={`border-b transition-all duration-200 ${lightTheme ? "border-gray-700 hover:bg-gray-800" : "border-gray-200 hover:bg-gray-100"
                               }`}
                           >
                             <td className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
@@ -995,7 +946,7 @@ const MemberManagement = () => {
                                 />
                               ) : (
                                 <div
-                                  className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full font-bold text-base sm:text-lg animation ${lightTheme ? "bg-blue-600 text-white" : "bg-blue-200 text-blue-900"
+                                  className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full font-bold text-base sm:text-lg ${lightTheme ? "bg-blue-600 text-white" : "bg-blue-200 text-blue-900"
                                     }`}
                                 >
                                   {member.name?.charAt(0).toUpperCase() || "U"}
@@ -1050,14 +1001,14 @@ const MemberManagement = () => {
                                     setModalType("edit");
                                     setShowModal(true);
                                   }}
-                                  className="px-2 sm:px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-xs sm:text-sm transition-all duration-200"
+                                  className="px-2 sm:px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-xs sm:text-sm transition-all duration-200 cursor-pointer"
                                   aria-label={`Edit ${member.name || "member"}`}
                                 >
                                   <Pencil size={16} />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteMember(member.id)}
-                                  className="px-2 sm:px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs sm:text-sm transition-all duration-200"
+                                  className="px-2 sm:px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs sm:text-sm transition-all duration-200 cursor-pointer"
                                   aria-label={`Delete ${member.name || "member"}`}
                                 >
                                   <Trash2 size={16} />
@@ -1075,9 +1026,9 @@ const MemberManagement = () => {
                       <button
                         disabled={currentPage === 1}
                         onClick={() => setCurrentPage((p) => p - 1)}
-                        className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all duration-200 animation ${lightTheme
-                            ? "bg-gray-800 text-white hover:bg-gray-700"
-                            : "bg-gray-100 text-black hover:bg-gray-200"
+                        className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all duration-200 ${lightTheme
+                          ? "bg-gray-800 text-white hover:bg-gray-700"
+                          : "bg-gray-100 text-black hover:bg-gray-200"
                           }`}
                         aria-label="Previous page"
                       >
@@ -1087,13 +1038,13 @@ const MemberManagement = () => {
                         <button
                           key={i}
                           onClick={() => setCurrentPage(i + 1)}
-                          className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 animation ${currentPage === i + 1
-                              ? lightTheme
-                                ? "bg-blue-600 text-white"
-                                : "bg-blue-200 text-blue-900"
-                              : lightTheme
-                                ? "bg-gray-800 text-white hover:bg-gray-700"
-                                : "bg-gray-100 text-black hover:bg-gray-200"
+                          className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all duration-200 ${currentPage === i + 1
+                            ? lightTheme
+                              ? "bg-blue-600 text-white"
+                              : "bg-blue-200 text-blue-900"
+                            : lightTheme
+                              ? "bg-gray-800 text-white hover:bg-gray-700"
+                              : "bg-gray-100 text-black hover:bg-gray-200"
                             }`}
                           aria-label={`Page ${i + 1}`}
                           aria-current={currentPage === i + 1 ? "page" : undefined}
@@ -1104,9 +1055,9 @@ const MemberManagement = () => {
                       <button
                         disabled={currentPage === totalPages}
                         onClick={() => setCurrentPage((p) => p + 1)}
-                        className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all duration-200 animation ${lightTheme
-                            ? "bg-gray-800 text-white hover:bg-gray-700"
-                            : "bg-gray-100 text-black hover:bg-gray-200"
+                        className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all duration-200 ${lightTheme
+                          ? "bg-gray-800 text-white hover:bg-gray-700"
+                          : "bg-gray-100 text-black hover:bg-gray-200"
                           }`}
                         aria-label="Next page"
                       >

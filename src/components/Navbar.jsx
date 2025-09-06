@@ -55,6 +55,23 @@ const Navbar = () => {
         </svg>
       ),
     },
+
+    {
+      name: "Issued",
+      path: "/issuedBooks",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path d="M9 12h6M9 16h6M5 20h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />
+        </svg>
+      ),
+    },
     {
       name: "Members",
       path: "/members",
@@ -68,22 +85,6 @@ const Navbar = () => {
           strokeWidth={2}
         >
           <path d="M17 20h5v-2a4 4 0 0 0-5-4M9 20H4v-2a4 4 0 0 1 5-4m3-4a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
-        </svg>
-      ),
-    },
-    {
-      name: "Issued",
-      path: "/borrowedbooks",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-5 h-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path d="M9 12h6M9 16h6M5 20h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />
         </svg>
       ),
     },

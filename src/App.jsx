@@ -1,6 +1,8 @@
 import { useContext } from "react";
+import Sidebar from "./components/Sidebar";
+import Navbar from "./components/Navbar";
 import { AppContext } from "./contexts/AppProvider";
-import AllRoutes from "./router/AllRoutes";
+import AllRoutes from "./router/AllRoutes"; // import your routes file
 
 const App = () => {
   const { lightTheme } = useContext(AppContext);

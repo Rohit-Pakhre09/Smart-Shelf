@@ -24,10 +24,10 @@ import {
   clearError,
   issueBook,
 } from "../modules/booksSlice";
-import { v4 as uuidv4 } from "uuid";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
+// Debouncing Function
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -41,6 +41,7 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
+// Book Modal
 const BookFormModal = ({
   showModal,
   setShowModal,
@@ -73,6 +74,7 @@ const BookFormModal = ({
     addedOn: new Date().toISOString(),
   });
   const [localError, setLocalError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (showModal && modalType !== "add" && selectedBook) {
@@ -135,7 +137,7 @@ const BookFormModal = ({
     }
     setFormData((prev) => ({
       ...prev,
-      copies: [...prev.copies, { ...newCopy, id: newCopy.id || uuidv4() }],
+      copies: [...prev.copies, { ...newCopy }],
     }));
     setNewCopy({
       id: "",
@@ -164,8 +166,7 @@ const BookFormModal = ({
     if (["year", "pages", "price", "popularity"].includes(name)) {
       if (value && isNaN(value)) {
         setLocalError(
-          `${name.charAt(0).toUpperCase() + name.slice(1)
-          } must be a valid number.`
+          `${name.charAt(0).toUpperCase() + name.slice(1)} must be a valid number.`
         );
         return;
       }
@@ -194,9 +195,10 @@ const BookFormModal = ({
     setLocalError(null);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, retries = 3) => {
     e.preventDefault();
     setLocalError(null);
+    setIsSubmitting(true);
     try {
       if (!formData.title || !formData.author) {
         throw new Error("Title and Author are required.");
@@ -242,13 +244,19 @@ const BookFormModal = ({
       setShowModal(false);
     } catch (err) {
       console.error("Submit error:", err);
+      if (err.status >= 500 && retries > 0) {
+        console.warn(`Server error (${err.status}). Retrying... (${retries} attempts left)`);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        return handleSubmit(e, retries - 1);
+      }
       const errorMessage =
         typeof err === "string"
           ? err
-          : err.message ||
-          "Failed to save book. Please check your input and try again.";
+          : err.message || "Failed to save book. Please check your input and try again.";
       setLocalError(errorMessage);
       setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -258,8 +266,8 @@ const BookFormModal = ({
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 transition-opacity p-4 sm:p-5">
       <div
         className={`relative p-4 sm:p-6 rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg max-h-[80vh] overflow-y-auto scrollbar-thin transform transition-all scale-100 hover:scale-102 ${lightTheme
-            ? "bg-gray-800 text-white border border-gray-700"
-            : "bg-white text-black border border-gray-200"
+          ? "bg-gray-800 text-white border border-gray-700"
+          : "bg-white text-black border border-gray-200"
           }`}
       >
         <div className="flex items-center justify-between mb-4">
@@ -273,6 +281,7 @@ const BookFormModal = ({
           <button
             onClick={() => setShowModal(false)}
             className="text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"
+            disabled={isSubmitting}
           >
             <svg
               className="w-5 h-5 sm:w-6 sm:h-6"
@@ -307,9 +316,7 @@ const BookFormModal = ({
                 Title
               </label>
               <p
-                className={`p-3 border rounded-lg ${lightTheme
-                    ? "bg-gray-700 text-white"
-                    : "bg-gray-100 text-gray-800"
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
                   }`}
               >
                 {selectedBook?.title || "N/A"}
@@ -320,9 +327,7 @@ const BookFormModal = ({
                 Author
               </label>
               <p
-                className={`p-3 border rounded-lg ${lightTheme
-                    ? "bg-gray-700 text-white"
-                    : "bg-gray-100 text-gray-800"
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
                   }`}
               >
                 {selectedBook?.author || "N/A"}
@@ -333,9 +338,7 @@ const BookFormModal = ({
                 Genres
               </label>
               <p
-                className={`p-3 border rounded-lg ${lightTheme
-                    ? "bg-gray-700 text-white"
-                    : "bg-gray-100 text-gray-800"
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
                   }`}
               >
                 {Array.isArray(selectedBook?.genre)
@@ -348,9 +351,7 @@ const BookFormModal = ({
                 Publisher
               </label>
               <p
-                className={`p-3 border rounded-lg ${lightTheme
-                    ? "bg-gray-700 text-white"
-                    : "bg-gray-100 text-gray-800"
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
                   }`}
               >
                 {selectedBook?.publisher || "N/A"}
@@ -361,9 +362,7 @@ const BookFormModal = ({
                 Language
               </label>
               <p
-                className={`p-3 border rounded-lg ${lightTheme
-                    ? "bg-gray-700 text-white"
-                    : "bg-gray-100 text-gray-800"
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
                   }`}
               >
                 {selectedBook?.language || "N/A"}
@@ -374,9 +373,7 @@ const BookFormModal = ({
                 Year
               </label>
               <p
-                className={`p-3 border rounded-lg ${lightTheme
-                    ? "bg-gray-700 text-white"
-                    : "bg-gray-100 text-gray-800"
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
                   }`}
               >
                 {selectedBook?.year || "N/A"}
@@ -387,9 +384,7 @@ const BookFormModal = ({
                 Pages
               </label>
               <p
-                className={`p-3 border rounded-lg ${lightTheme
-                    ? "bg-gray-700 text-white"
-                    : "bg-gray-100 text-gray-800"
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
                   }`}
               >
                 {selectedBook?.pages || "N/A"}
@@ -400,9 +395,7 @@ const BookFormModal = ({
                 Description
               </label>
               <p
-                className={`p-3 border rounded-lg ${lightTheme
-                    ? "bg-gray-700 text-white"
-                    : "bg-gray-100 text-gray-800"
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
                   }`}
               >
                 {selectedBook?.description || "N/A"}
@@ -413,9 +406,7 @@ const BookFormModal = ({
                 Price
               </label>
               <p
-                className={`p-3 border rounded-lg ${lightTheme
-                    ? "bg-gray-700 text-white"
-                    : "bg-gray-100 text-gray-800"
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
                   }`}
               >
                 ₹{selectedBook?.price || "N/A"}
@@ -426,9 +417,7 @@ const BookFormModal = ({
                 Image URL
               </label>
               <p
-                className={`p-3 border rounded-lg truncate ${lightTheme
-                    ? "bg-gray-700 text-white"
-                    : "bg-gray-100 text-gray-800"
+                className={`p-3 border rounded-lg truncate ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
                   }`}
               >
                 {selectedBook?.img || "N/A"}
@@ -439,9 +428,7 @@ const BookFormModal = ({
                 Popularity
               </label>
               <p
-                className={`p-3 border rounded-lg ${lightTheme
-                    ? "bg-gray-700 text-white"
-                    : "bg-gray-100 text-gray-800"
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
                   }`}
               >
                 {selectedBook?.popularity
@@ -454,9 +441,7 @@ const BookFormModal = ({
                 Copies
               </label>
               <div
-                className={`p-3 border rounded-lg ${lightTheme
-                    ? "bg-gray-700 text-white"
-                    : "bg-gray-100 text-gray-800"
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
                   }`}
               >
                 {selectedBook?.copies && selectedBook.copies.length > 0 ? (
@@ -465,9 +450,7 @@ const BookFormModal = ({
                       <li key={copy.id || `copy-${index}`} className="text-sm">
                         Copy ID: {copy.id || "N/A"}, ISBN: {copy.isbn || "N/A"},
                         Availability: {copy.availability || "N/A"}, Edition:{" "}
-                        {copy.edition || "N/A"}, Condition:{" "}
-                        {copy.condition || "N/A"}, Added On:{" "}
-                        {copy.addedOn || "N/A"}
+                        {copy.edition || "N/A"}, Condition: {copy.condition || "N/A"}
                       </li>
                     ))}
                   </ul>
@@ -480,9 +463,9 @@ const BookFormModal = ({
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all duration-200 transform hover:scale-105 text-sm sm:text-base ${lightTheme
-                    ? "bg-gray-600 text-white hover:bg-gray-700"
-                    : "bg-gray-300 text-gray-800 hover:bg-gray-400"
+                className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-600 text-white hover:bg-gray-700"
+                  : "bg-gray-300 text-gray-800 hover:bg-gray-400"
                   }`}
               >
                 Close
@@ -490,332 +473,350 @@ const BookFormModal = ({
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-500">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
-                    }`}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500">
-                  Author
-                </label>
-                <input
-                  type="text"
-                  name="author"
-                  value={formData.author}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
-                    }`}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500">
-                  Genres (comma separated)
-                </label>
-                <input
-                  type="text"
-                  name="genre"
-                  value={formData.genre}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
-                    }`}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500">
-                  Publisher
-                </label>
-                <input
-                  type="text"
-                  name="publisher"
-                  value={formData.publisher}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
-                    }`}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500">
-                  Language
-                </label>
-                <input
-                  type="text"
-                  name="language"
-                  value={formData.language}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
-                    }`}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500">
-                  Year
-                </label>
-                <input
-                  type="number"
-                  name="year"
-                  value={formData.year}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
-                    }`}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500">
-                  Pages
-                </label>
-                <input
-                  type="number"
-                  name="pages"
-                  value={formData.pages}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
-                    }`}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500">
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
-                    }`}
-                  rows="4"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500">
-                  Price
-                </label>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
-                    }`}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500">
-                  Image URL
-                </label>
-                <input
-                  type="text"
-                  name="img"
-                  value={formData.img}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
-                    }`}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500">
-                  Popularity
-                </label>
-                <input
-                  type="number"
-                  name="popularity"
-                  value={formData.popularity}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
-                    }`}
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500">
-                  Copies
-                </label>
-                <div
-                  className={`p-3 border rounded-lg ${lightTheme
-                      ? "bg-gray-700 text-white"
-                      : "bg-gray-100 text-gray-800"
-                    }`}
-                >
-                  {formData.copies.length > 0 ? (
-                    <ul className="list-disc pl-5 space-y-1 mb-4">
-                      {formData.copies.map((copy, index) => (
-                        <li
-                          key={copy.id || `copy-${index}`}
-                          className="text-sm flex justify-between items-center"
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Title
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Author
+              </label>
+              <input
+                type="text"
+                name="author"
+                value={formData.author}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+              }`}
+              required
+              disabled={isSubmitting}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Genres (comma separated)
+              </label>
+              <input
+                type="text"
+                name="genre"
+                value={formData.genre}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
+                disabled={isSubmitting}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Publisher
+              </label>
+              <input
+                type="text"
+                name="publisher"
+                value={formData.publisher}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
+                disabled={isSubmitting}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Language
+              </label>
+              <input
+                type="text"
+                name="language"
+                value={formData.language}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
+                disabled={isSubmitting}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Year
+              </label>
+              <input
+                type="number"
+                name="year"
+                value={formData.year}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
+                disabled={isSubmitting}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Pages
+              </label>
+              <input
+                type="number"
+                name="pages"
+                value={formData.pages}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
+                disabled={isSubmitting}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Description
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
+                rows="4"
+                disabled={isSubmitting}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Price
+              </label>
+              <input
+                type="number"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
+                disabled={isSubmitting}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Image URL
+              </label>
+              <input
+                type="text"
+                name="img"
+                value={formData.img}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
+                disabled={isSubmitting}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Popularity
+              </label>
+              <input
+                type="number"
+                name="popularity"
+                value={formData.popularity}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
+                step="0.01"
+                disabled={isSubmitting}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-500">
+                Copies
+              </label>
+              <div
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
+              >
+                {formData.copies.length > 0 ? (
+                  <ul className="list-disc pl-5 space-y-1 mb-4">
+                    {formData.copies.map((copy, index) => (
+                      <li
+                        key={copy.id || `copy-${index}`}
+                        className="text-sm flex justify-between items-center"
+                      >
+                        <span>
+                          Copy ID: {copy.id || "N/A"}, ISBN: {copy.isbn || "N/A"},
+                          Availability: {copy.availability || "N/A"}, Edition:{" "}
+                          {copy.edition || "N/A"}, Condition: {copy.condition || "N/A"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCopy(index)}
+                          className={`ml-2 text-red-500 hover:text-red-700 ${lightTheme ? "text-red-400" : "text-red-600"
+                            }`}
+                          disabled={isSubmitting}
                         >
-                          <span>
-                            Copy ID: {copy.id || "N/A"}, ISBN:{" "}
-                            {copy.isbn || "N/A"}, Availability:{" "}
-                            {copy.availability || "N/A"}, Edition:{" "}
-                            {copy.edition || "N/A"}, Condition:{" "}
-                            {copy.condition || "N/A"}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveCopy(index)}
-                            className={`ml-2 text-red-500 hover:text-red-700 ${lightTheme ? "text-red-400" : "text-red-600"
-                              }`}
-                          >
-                            Remove
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm">No copies added</p>
-                  )}
-                </div>
-                <div className="mt-4 space-y-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500">
-                      Copy ID
-                    </label>
-                    <input
-                      type="text"
-                      name="id"
-                      value={newCopy.id}
-                      onChange={handleCopyChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                          ? "bg-gray-700 text-white border-gray-600"
-                          : "bg-white text-black border-gray-300"
-                        }`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500">
-                      ISBN
-                    </label>
-                    <input
-                      type="text"
-                      name="isbn"
-                      value={newCopy.isbn}
-                      onChange={handleCopyChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                          ? "bg-gray-700 text-white border-gray-600"
-                          : "bg-white text-black border-gray-300"
-                        }`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500">
-                      Availability
-                    </label>
-                    <select
-                      name="availability"
-                      value={newCopy.availability}
-                      onChange={handleCopyChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                          ? "bg-gray-700 text-white border-gray-600"
-                          : "bg-white text-black border-gray-300"
-                        }`}
-                    >
-                      <option value="available">Available</option>
-                      <option value="issued">Issued</option>
-                      <option value="reserved">Reserved</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500">
-                      Edition
-                    </label>
-                    <input
-                      type="text"
-                      name="edition"
-                      value={newCopy.edition}
-                      onChange={handleCopyChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                          ? "bg-gray-700 text-white border-gray-600"
-                          : "bg-white text-black border-gray-300"
-                        }`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500">
-                      Condition
-                    </label>
-                    <select
-                      name="condition"
-                      value={newCopy.condition}
-                      onChange={handleCopyChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                          ? "bg-gray-700 text-white border-gray-600"
-                          : "bg-white text-black border-gray-300"
-                        }`}
-                    >
-                      <option value="new">New</option>
-                      <option value="good">Good</option>
-                      <option value="worn">Worn</option>
-                    </select>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddCopy}
-                    className={`mt-2 px-4 py-2 rounded-lg font-medium cursor-pointer transition-all duration-200 transform hover:scale-105 text-sm sm:text-base ${lightTheme
-                        ? "bg-green-600 text-white hover:bg-green-700"
-                        : "bg-green-500 text-white hover:bg-green-600"
-                      }`}
-                  >
-                    Add Copy
-                  </button>
-                </div>
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm">No copies added</p>
+                )}
               </div>
-              <div className="flex justify-end gap-3 mt-6">
+              <div className="mt-4 space-y-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">
+                    Copy ID
+                  </label>
+                  <input
+                    type="text"
+                    name="id"
+                    value={newCopy.id}
+                    onChange={handleCopyChange}
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                      ? "bg-gray-700 text-white border-gray-600"
+                      : "bg-white text-black border-gray-300"
+                      }`}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">
+                    ISBN
+                  </label>
+                  <input
+                    type="text"
+                    name="isbn"
+                    value={newCopy.isbn}
+                    onChange={handleCopyChange}
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                      ? "bg-gray-700 text-white border-gray-600"
+                      : "bg-white text-black border-gray-300"
+                      }`}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">
+                    Availability
+                  </label>
+                  <select
+                    name="availability"
+                    value={newCopy.availability}
+                    onChange={handleCopyChange}
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                      ? "bg-gray-700 text-white border-gray-600"
+                      : "bg-white text-black border-gray-300"
+                      }`}
+                    disabled={isSubmitting}
+                  >
+                    <option value="available">Available</option>
+                    <option value="issued">Issued</option>
+                    <option value="reserved">Reserved</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">
+                    Edition
+                  </label>
+                  <input
+                    type="text"
+                    name="edition"
+                    value={newCopy.edition}
+                    onChange={handleCopyChange}
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                      ? "bg-gray-700 text-white border-gray-600"
+                      : "bg-white text-black border-gray-300"
+                      }`}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500">
+                    Condition
+                  </label>
+                  <select
+                    name="condition"
+                    value={newCopy.condition}
+                    onChange={handleCopyChange}
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                      ? "bg-gray-700 text-white border-gray-600"
+                      : "bg-white text-black border-gray-300"
+                      }`}
+                    disabled={isSubmitting}
+                  >
+                    <option value="new">New</option>
+                    <option value="good">Good</option>
+                    <option value="worn">Worn</option>
+                  </select>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all duration-200 transform hover:scale-105 text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-600 text-white hover:bg-gray-700"
-                      : "bg-gray-300 text-gray-800 hover:bg-gray-400"
-                    }`}
+                  onClick={handleAddCopy}
+                  className={`mt-2 px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base ${lightTheme
+                    ? "bg-green-600 text-white hover:bg-green-700"
+                    : "bg-green-500 text-white hover:bg-green-600"
+                    } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                  disabled={isSubmitting}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all duration-200 transform hover:scale-105 text-sm sm:text-base ${lightTheme
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                      : "bg-indigo-500 text-white hover:bg-indigo-600"
-                    }`}
-                >
-                  Save
+                  Add Copy
                 </button>
               </div>
             </div>
-          </form>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-600 text-white hover:bg-gray-700"
+                  : "bg-gray-300 text-gray-800 hover:bg-gray-400"
+                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base flex items-center gap-2 ${lightTheme
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                  : "bg-indigo-500 text-white hover:bg-indigo-600"
+                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                disabled={isSubmitting}
+              >
+                {isSubmitting && (
+                  <span className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></span>
+                )}
+                Save
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -858,23 +859,18 @@ BookFormModal.propTypes = {
   setError: PropTypes.func.isRequired,
 };
 
-const IssueBookModal = ({
-  showModal,
-  setShowModal,
-  selectedBook,
-  lightTheme,
-  dispatch,
-  setError,
-}) => {
+// Issue Book Modal
+const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dispatch, setError }) => {
   const [issueData, setIssueData] = useState({
-    id: "",
+    copyId: "",
     memberId: "",
     issuedBy: "",
     issueDate: new Date(),
     dueDate: new Date(new Date().setDate(new Date().getDate() + 14)),
   });
-  const [localError, setLocalError] = useState(null);
   const debouncedIssueData = useDebounce(issueData, 300);
+  const [localError, setLocalError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setIssueData({ ...issueData, [e.target.name]: e.target.value });
@@ -882,84 +878,48 @@ const IssueBookModal = ({
   };
 
   const handleDateChange = (date, name) => {
-    if (date && !isNaN(date.getTime())) {
-      setIssueData({ ...issueData, [name]: date });
-      setLocalError(null);
-    } else {
-      setLocalError(
-        `${name === "issueDate" ? "Issue" : "Due"} Date is invalid.`
-      );
-    }
+    setIssueData({ ...issueData, [name]: date });
+    setLocalError(null);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, retries = 3) => {
     e.preventDefault();
     setLocalError(null);
+    setIsSubmitting(true);
     try {
-      if (!debouncedIssueData.id) {
+      if (!debouncedIssueData.copyId) {
         throw new Error("Please select a copy to issue.");
       }
       if (!debouncedIssueData.memberId.trim()) {
         throw new Error("Member ID is required.");
       }
-      if (!/^[A-Za-z0-9]+$/.test(debouncedIssueData.memberId)) {
-        throw new Error("Member ID must be alphanumeric.");
-      }
       if (!debouncedIssueData.issuedBy.trim()) {
         throw new Error("Issued By is required.");
-      }
-      if (!/^[A-Za-z0-9_]+$/.test(debouncedIssueData.issuedBy)) {
-        throw new Error(
-          "Issued By must be alphanumeric or include underscores."
-        );
-      }
-      if (
-        !debouncedIssueData.issueDate ||
-        isNaN(debouncedIssueData.issueDate.getTime())
-      ) {
-        throw new Error("Issue Date is required.");
-      }
-      if (
-        !debouncedIssueData.dueDate ||
-        isNaN(debouncedIssueData.dueDate.getTime())
-      ) {
-        throw new Error("Due Date is required.");
-      }
-      if (debouncedIssueData.dueDate <= debouncedIssueData.issueDate) {
-        throw new Error("Due Date must be after Issue Date.");
       }
       if (!selectedBook?.id) {
         throw new Error("Invalid book ID.");
       }
-      const selectedCopy = selectedBook.copies.find(
-        (copy) => copy.id === debouncedIssueData.id
-      );
-      if (!selectedCopy) {
-        throw new Error("Selected copy is invalid.");
-      }
-      if (selectedCopy.availability !== "available") {
-        throw new Error("Selected copy is not available.");
-      }
-
+      const issuePayload = {
+        copyId: debouncedIssueData.copyId,
+        memberId: debouncedIssueData.memberId,
+        issuedBy: debouncedIssueData.issuedBy,
+        issueDate: debouncedIssueData.issueDate.toISOString().split("T")[0],
+        dueDate: debouncedIssueData.dueDate.toISOString().split("T")[0],
+        status: "issued",
+        renewals: 0,
+      };
       await dispatch(
         issueBook({
           bookId: selectedBook.id,
-          copyId: debouncedIssueData.id,
-          issueData: {
-            id: uuidv4(),
-            memberId: debouncedIssueData.memberId,
-            issuedBy: debouncedIssueData.issuedBy,
-            issueDate: debouncedIssueData.issueDate.toISOString().split("T")[0],
-            dueDate: debouncedIssueData.dueDate.toISOString().split("T")[0],
-            status: "issued",
-            renewals: 0,
-          },
+          copyId: debouncedIssueData.copyId,
+          issueData: issuePayload,
         })
       ).unwrap();
-
+      await dispatch(fetchBooks()).unwrap();
+      await dispatch(fetchIssuedBooks()).unwrap();
       setShowModal(false);
       setIssueData({
-        id: "",
+        copyId: "",
         memberId: "",
         issuedBy: "",
         issueDate: new Date(),
@@ -967,181 +927,154 @@ const IssueBookModal = ({
       });
     } catch (err) {
       console.error("Issue book error:", err);
+      if (err.status >= 500 && retries > 0) {
+        console.warn(`Server error (${err.status}). Retrying... (${retries} attempts left)`);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        return handleSubmit(e, retries - 1);
+      }
       const errorMessage =
         typeof err === "string"
           ? err
           : err.message || "Failed to issue book. Please try again.";
       setLocalError(errorMessage);
       setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   if (!showModal) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 transition-opacity p-4 sm:p-5">
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div
-        className={`relative p-4 sm:p-6 rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg max-h-[80vh] overflow-y-auto scrollbar-thin transform transition-all scale-100 hover:scale-102 ${lightTheme
-            ? "bg-gray-800 text-white border border-gray-700"
-            : "bg-white text-black border border-gray-200"
+        className={`relative p-6 rounded-xl shadow-2xl max-w-md max-h-[80vh] overflow-y-auto ${lightTheme ? "bg-gray-800 text-white" : "bg-white text-black"
           }`}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">
-            Issue Book: {selectedBook?.title || "N/A"}
-          </h2>
-          <button
-            onClick={() => setShowModal(false)}
-            className="text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"
-          >
-            <svg
-              className="w-5 h-5 sm:w-6 sm:h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
+        <h2 className="text-2xl font-semibold mb-4">Issue Book: {selectedBook?.title}</h2>
         {localError && (
-          <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-lg text-sm">
+          <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-lg">
             {localError}
             <button
               onClick={() => setLocalError(null)}
-              className="ml-2 text-red-600 hover:text-red-800"
+              className="ml-2 text-red-600"
             >
               Dismiss
             </button>
           </div>
         )}
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Select Copy
-              </label>
-              <select
-                name="id"
-                value={issueData.id}
-                onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                  }`}
-                required
-              >
-                <option value="">Select a copy</option>
-                {selectedBook?.copies
-                  ?.filter((copy) => copy.availability === "available")
-                  .map((copy, index) => (
-                    <option key={copy.id || `copy-${index}`} value={copy.id}>
-                      Copy ID: {copy.id || "N/A"}, ISBN: {copy.isbn || "N/A"},
-                      Edition: {copy.edition || "N/A"}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Member ID
-              </label>
-              <input
-                type="text"
-                name="memberId"
-                value={issueData.memberId}
-                onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                  }`}
-                required
-                placeholder="Enter Member ID (e.g., M001)"
-                pattern="[A-Za-z0-9]+"
-                title="Member ID must be alphanumeric"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Issued By
-              </label>
-              <input
-                type="text"
-                name="issuedBy"
-                value={issueData.issuedBy}
-                onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                  }`}
-                required
-                placeholder="Enter Issuer ID (e.g., Librarian_01)"
-                pattern="[A-Za-z0-9_]+"
-                title="Issuer ID must be alphanumeric or include underscores"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Issue Date
-              </label>
-              <DatePicker
-                selected={issueData.issueDate}
-                onChange={(date) => handleDateChange(date, "issueDate")}
-                dateFormat="yyyy-MM-dd"
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                  }`}
-                required
-                maxDate={new Date()}
-                placeholderText="Select Issue Date"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-500">
-                Due Date
-              </label>
-              <DatePicker
-                selected={issueData.dueDate}
-                onChange={(date) => handleDateChange(date, "dueDate")}
-                dateFormat="yyyy-MM-dd"
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-sm sm:text-base ${lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                  }`}
-                required
-                minDate={new Date(new Date().setDate(new Date().getDate() + 1))}
-                placeholderText="Select Due Date"
-              />
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all duration-200 transform hover:scale-105 text-sm sm:text-base ${lightTheme
-                    ? "bg-gray-600 text-white hover:bg-gray-700"
-                    : "bg-gray-300 text-gray-800 hover:bg-gray-400"
-                  }`}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all duration-200 transform hover:scale-105 text-sm sm:text-base ${lightTheme
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                    : "bg-indigo-500 text-white hover:bg-indigo-600"
-                  }`}
-              >
-                Issue Book
-              </button>
-            </div>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-500">
+              Select Copy
+            </label>
+            <select
+              name="copyId"
+              value={issueData.copyId}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
+                }`}
+              required
+              disabled={isSubmitting}
+            >
+              <option value="">Select a copy</option>
+              {selectedBook?.copies
+                ?.filter((copy) => copy.availability === "available")
+                .map((copy) => (
+                  <option key={copy.id} value={copy.id}>
+                    Copy ID: {copy.id}, ISBN: {copy.isbn}
+                  </option>
+                ))}
+            </select>
           </div>
-        </form>
+          <div>
+            <label className="block text-sm font-medium text-gray-500">
+              Member ID
+            </label>
+            <input
+              type="text"
+              name="memberId"
+              value={issueData.memberId}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
+                }`}
+              required
+              placeholder="Enter Member ID"
+              disabled={isSubmitting}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-500">
+              Issued By
+            </label>
+            <input
+              type="text"
+              name="issuedBy"
+              value={issueData.issuedBy}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
+                }`}
+              required
+              placeholder="Enter Issued By"
+              disabled={isSubmitting}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-500">
+              Issue Date
+            </label>
+            <DatePicker
+              selected={issueData.issueDate}
+              onChange={(date) => handleDateChange(date, "issueDate")}
+              dateFormat="yyyy-MM-dd"
+              className={`w-full p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
+                }`}
+              required
+              disabled={isSubmitting}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-500">
+              Due Date
+            </label>
+            <DatePicker
+              selected={issueData.dueDate}
+              onChange={(date) => handleDateChange(date, "dueDate")}
+              dateFormat="yyyy-MM-dd"
+              className={`w-full p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
+                }`}
+              required
+              disabled={isSubmitting}
+            />
+          </div>
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              type="button"
+              onClick={() => setShowModal(false)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 ${lightTheme
+                ? "bg-gray-600 text-white hover:bg-gray-700"
+                : "bg-gray-300 text-gray-800 hover:bg-gray-400"
+                } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className={`px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 flex items-center gap-2 ${lightTheme
+                ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                : "bg-indigo-500 text-white hover:bg-indigo-600"
+                } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+              disabled={isSubmitting}
+            >
+              {isSubmitting && (
+                <span className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></span>
+              )}
+              Issue Book
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1158,9 +1091,6 @@ IssueBookModal.propTypes = {
         id: PropTypes.string,
         isbn: PropTypes.string,
         availability: PropTypes.string,
-        edition: PropTypes.string,
-        condition: PropTypes.string,
-        addedOn: PropTypes.string,
       })
     ),
   }),
@@ -1169,6 +1099,7 @@ IssueBookModal.propTypes = {
   setError: PropTypes.func.isRequired,
 };
 
+// Main Logic
 const BookManagement = () => {
   const [title, setTitle] = useState("");
   const [sortBy, setSortBy] = useState("");
@@ -1193,16 +1124,10 @@ const BookManagement = () => {
   } = useSelector((state) => state.books);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        await dispatch(fetchBooks()).unwrap();
-        await dispatch(fetchIssuedBooks()).unwrap();
-      } catch (err) {
-        console.error("Fetch books error:", err);
-        setError("Failed to fetch books. Please try again.");
-      }
-    };
-    fetchData();
+    dispatch(fetchBooks()).unwrap()
+      .catch((err) => setError(err.message || "Failed to fetch books."));
+    dispatch(fetchIssuedBooks()).unwrap()
+      .catch((err) => setError(err.message || "Failed to fetch issued books."));
   }, [dispatch]);
 
   useEffect(() => {
@@ -1330,33 +1255,6 @@ const BookManagement = () => {
     }
   };
 
-  const getPageNumbers = () => {
-    const maxPagesToShow = 5;
-    const pages = [];
-    if (totalPages <= maxPagesToShow) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      pages.push(1);
-      let startPage = Math.max(2, currentPage - 2);
-      let endPage = Math.min(totalPages - 1, currentPage + 2);
-      if (startPage > 2) {
-        pages.push("...");
-      }
-      for (let i = startPage; i <= endPage; i++) {
-        pages.push(i);
-      }
-      if (endPage < totalPages - 1) {
-        pages.push("...");
-      }
-      if (totalPages > 1) {
-        pages.push(totalPages);
-      }
-    }
-    return pages;
-  };
-
   const handleAddBook = () => {
     setSelectedBook(null);
     setModalType("add");
@@ -1397,78 +1295,19 @@ const BookManagement = () => {
       setError("Cannot delete book: Invalid book ID.");
       return;
     }
+    const originalBooks = [...books];
+    const originalIssuedBooks = [...issuedBooks];
+    setError(null);
     try {
       await dispatch(deleteBook(id)).unwrap();
       await dispatch(fetchBooks()).unwrap();
     } catch (err) {
-      setError(err?.message || "Failed to delete book.");
+      console.error("Delete book error:", err);
+      setError("Failed to delete book. It may have been deleted already. Refreshing...");
+      dispatch(fetchBooks()).unwrap()
+        .catch(() => setError("Failed to refresh books."));
     }
   };
-
-  // const handleIssueBook = async (
-  //   bookId,
-  //   copyId,
-  //   memberId,
-  //   issuedBy,
-  //   issueDate,
-  //   dueDate
-  // ) => {
-  //   if (
-  //     !bookId ||
-  //     !copyId ||
-  //     !memberId ||
-  //     !issuedBy ||
-  //     !issueDate ||
-  //     !dueDate
-  //   ) {
-  //     console.error("Invalid parameters for issuing book:", {
-  //       bookId,
-  //       copyId,
-  //       memberId,
-  //       issuedBy,
-  //       issueDate,
-  //       dueDate,
-  //     });
-  //     setError("Cannot issue book: Missing required fields.");
-  //     return;
-  //   }
-  //   try {
-  //     const book = books.find((b) => b.id === bookId);
-  //     if (!book) {
-  //       throw new Error("Book not found.");
-  //     }
-  //     const copy = book.copies.find((c) => c.id === copyId);
-  //     if (!copy) {
-  //       throw new Error("Copy not found.");
-  //     }
-  //     if (copy.availability !== "available") {
-  //       throw new Error("This copy is not available for issuing.");
-  //     }
-  //     await dispatch(
-  //       issueBook({
-  //         bookId,
-  //         copyId,
-  //         issueData: {
-  //           id: uuidv4(),
-  //           memberId,
-  //           issuedBy,
-  //           issueDate,
-  //           dueDate,
-  //           status: "issued",
-  //           renewals: 0,
-  //         },
-  //       })
-  //     ).unwrap();
-  //     await dispatch(fetchBooks()).unwrap();
-  //     await dispatch(fetchIssuedBooks()).unwrap();
-  //   } catch (err) {
-  //     console.error("Issue book error:", err);
-  //     setError(
-  //       err?.message ||
-  //       "Failed to issue book. Please check your inputs or server status."
-  //     );
-  //   }
-  // };
 
   const handleOpenIssueModal = (book) => {
     if (
@@ -1498,17 +1337,19 @@ const BookManagement = () => {
         <section className="flex-1 pt-0 lg:pt-[70px] m-0 lg:m-2.5 transition-all duration-500 ease-in-out">
           <div
             className={`overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-6 ${open
-                ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
-                : "lg:ml-24 lg:w-[calc(100%-6rem)]"
+              ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
+              : "lg:ml-24 lg:w-[calc(100%-6rem)]"
               }`}
             style={{ height: "calc(100vh - 70px - 50px)" }}
           >
-            <p
-              className={`${lightTheme ? "text-white" : "text-black"
-                } text-3xl pb-3 mt-5 pl-5 font-bold transition-all duration-500`}
-            >
-              Books Management
-            </p>
+            <div className="flex justify-between items-center">
+              <p
+                className={`${lightTheme ? "text-white" : "text-black"
+                  } text-3xl pb-3 mt-5 pl-5 font-bold transition-all duration-500`}
+              >
+                Books Management
+              </p>
+            </div>
             {error && (
               <div className="mx-5 mb-4 p-3 bg-red-100 text-red-800 rounded-lg text-sm">
                 {error}
@@ -1618,9 +1459,7 @@ const BookManagement = () => {
                   }`}
               >
                 <div
-                  className={`flex items-center w-full md:max-w-lg px-4 py-2 border rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 ${lightTheme
-                      ? "bg-gray-800 border-gray-600"
-                      : "bg-gray-50 border-gray-200"
+                  className={`flex items-center w-full md:max-w-lg px-4 py-2 border rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 ${lightTheme ? "bg-gray-800 border-gray-600" : "bg-gray-50 border-gray-200"
                     }`}
                 >
                   <svg
@@ -1640,8 +1479,8 @@ const BookManagement = () => {
                   </svg>
                   <input
                     className={`flex-1 bg-transparent outline-none text-sm md:text-base ${lightTheme
-                        ? "text-white placeholder-gray-400"
-                        : "text-gray-700 placeholder-gray-400"
+                      ? "text-white placeholder-gray-400"
+                      : "text-gray-700 placeholder-gray-400"
                       }`}
                     type="text"
                     value={title}
@@ -1652,8 +1491,8 @@ const BookManagement = () => {
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
                   <select
                     className={`px-4 py-2 rounded-lg shadow-sm border text-sm cursor-pointer w-full sm:w-auto ${lightTheme
-                        ? "bg-gray-800 text-white border-gray-600"
-                        : "bg-white text-gray-700 border-gray-300"
+                      ? "bg-gray-800 text-white border-gray-600"
+                      : "bg-white text-gray-700 border-gray-300"
                       }`}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
@@ -1664,8 +1503,8 @@ const BookManagement = () => {
                   </select>
                   <select
                     className={`px-4 py-2 rounded-lg shadow-sm border text-sm cursor-pointer w-full sm:w-auto ${lightTheme
-                        ? "bg-gray-800 text-white border-gray-600"
-                        : "bg-white text-gray-700 border-gray-300"
+                      ? "bg-gray-800 text-white border-gray-600"
+                      : "bg-white text-gray-700 border-gray-300"
                       }`}
                     onChange={(e) => setFilterBy(e.target.value)}
                   >
@@ -1682,8 +1521,8 @@ const BookManagement = () => {
                   <button
                     onClick={handleAddBook}
                     className={`flex items-center justify-center gap-2 rounded-md shadow-md cursor-pointer ${lightTheme
-                        ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                        : "bg-indigo-500 hover:bg-indigo-600 text-white"
+                      ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                      : "bg-indigo-500 hover:bg-indigo-600 text-white"
                       }`}
                   >
                     <span className="flex md:hidden w-10 h-10 rounded-full items-center justify-center">
@@ -1763,92 +1602,72 @@ const BookManagement = () => {
                   </div>
                 )}
               </section>
-              {!loading && filteredBooks.length > booksPerPage && (
-                <section
-                  className={`flex justify-center items-center gap-1 sm:gap-2 p-3 sm:p-4 rounded-lg ${lightTheme ? "bg-gray-900" : "bg-white"
-                    } animation`}
-                >
+              {!loading && totalPages > 1 && (
+                <div className="flex justify-center items-center gap-1 sm:gap-2 mt-3 sm:mt-4 flex-wrap">
                   <button
-                    onClick={() => paginate(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`p-2 rounded-full ${lightTheme
-                        ? currentPage === 1
-                          ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                          : "bg-gray-600 text-white hover:bg-gray-700"
-                        : currentPage === 1
-                          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                          : "bg-gray-300 text-gray-800 hover:bg-gray-400"
-                      } transition-all duration-200 transform hover:scale-105 disabled:transform-none`}
+                    onClick={() => paginate(currentPage - 1)}
+                    className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all cursor-pointer ${lightTheme
+                      ? "bg-gray-800 text-white hover:bg-gray-700"
+                      : "bg-gray-100 text-black hover:bg-gray-200"
+                      }`}
                     aria-label="Previous page"
                   >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft size={16} />
                   </button>
-                  {getPageNumbers().map((page, index) => (
+                  {[...Array(totalPages)].map((_, i) => (
                     <button
-                      key={index}
-                      onClick={() => typeof page === "number" && paginate(page)}
-                      className={`px-3 py-1 rounded-lg text-sm sm:text-base ${lightTheme
-                          ? currentPage === page
-                            ? "bg-indigo-600 text-white"
-                            : typeof page === "number"
-                              ? "bg-gray-600 text-white hover:bg-gray-700"
-                              : "bg-gray-900 text-gray-400 cursor-default"
-                          : currentPage === page
-                            ? "bg-indigo-500 text-white"
-                            : typeof page === "number"
-                              ? "bg-gray-300 text-gray-800 hover:bg-gray-400"
-                              : "bg-white text-gray-400 cursor-default"
-                        } transition-all duration-200 transform hover:scale-105 disabled:transform-none`}
-                      disabled={typeof page !== "number"}
-                      aria-current={currentPage === page ? "page" : undefined}
-                      aria-label={
-                        typeof page === "number"
-                          ? `Page ${page}`
-                          : "Pagination ellipsis"
-                      }
+                      key={i}
+                      onClick={() => paginate(i + 1)}
+                      className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all cursor-pointer ${currentPage === i + 1
+                        ? lightTheme
+                          ? "bg-blue-600 text-white"
+                          : "bg-blue-200 text-blue-900"
+                        : lightTheme
+                          ? "bg-gray-800 text-white hover:bg-gray-700"
+                          : "bg-gray-100 text-black hover:bg-gray-200"
+                        }`}
+                      aria-label={`Page ${i + 1}`}
+                      aria-current={currentPage === i + 1 ? "page" : undefined}
                     >
-                      {page}
+                      {i + 1}
                     </button>
                   ))}
                   <button
-                    onClick={() => paginate(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`p-2 rounded-full ${lightTheme
-                        ? currentPage === totalPages
-                          ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                          : "bg-gray-600 text-white hover:bg-gray-700"
-                        : currentPage === totalPages
-                          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                          : "bg-gray-300 text-gray-800 hover:bg-gray-400"
-                      } transition-all duration-200 transform hover:scale-105 disabled:transform-none`}
+                    onClick={() => paginate(currentPage + 1)}
+                    className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all cursor-pointer ${lightTheme
+                      ? "bg-gray-800 text-white hover:bg-gray-700"
+                      : "bg-gray-100 text-black hover:bg-gray-200"
+                      }`}
                     aria-label="Next page"
                   >
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight size={16} />
                   </button>
-                </section>
+                </div>
               )}
               <Footer />
             </div>
           </div>
         </section>
-        <BookFormModal
-          showModal={showModal}
-          setShowModal={setShowModal}
-          modalType={modalType}
-          selectedBook={selectedBook}
-          lightTheme={lightTheme}
-          dispatch={dispatch}
-          setError={setError}
-        />
-        <IssueBookModal
-          showModal={showIssueModal}
-          setShowModal={setShowIssueModal}
-          selectedBook={selectedBook}
-          lightTheme={lightTheme}
-          dispatch={dispatch}
-          setError={setError}
-        />
       </div>
+      <BookFormModal
+        showModal={showModal}
+        setShowModal={setShowModal}
+        modalType={modalType}
+        selectedBook={selectedBook}
+        lightTheme={lightTheme}
+        dispatch={dispatch}
+        setError={setError}
+      />
+      <IssueBookModal
+        showModal={showIssueModal}
+        setShowModal={setShowIssueModal}
+        selectedBook={selectedBook}
+        lightTheme={lightTheme}
+        dispatch={dispatch}
+        setError={setError}
+      />
     </section>
   );
 };

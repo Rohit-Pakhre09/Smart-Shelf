@@ -1,21 +1,32 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import { v4 as uuidv4 } from "uuid";
 
 const booksUrl = "https://smart-shelf-server-ykc7.onrender.com/books";
-const issuedBooksUrl =
-  "https://smart-shelf-server-ykc7.onrender.com/issuedBooks";
+const issuedBooksUrl = "https://smart-shelf-server-qm2u.onrender.com/issuedBooks";
+
+// Retry function to handle Render cold starts
+const retry = async (fn, retries = 3, delay = 1000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+};
 
 export const fetchBooks = createAsyncThunk(
   "books/fetchBooks",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(booksUrl);
+      const response = await retry(() => axios.get(booksUrl));
       return response.data;
     } catch (error) {
       console.error(
         "Fetch books error:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
+        error.response?.status
       );
       return rejectWithValue(
         error.response?.data?.message || "Error fetching books"
@@ -28,12 +39,13 @@ export const fetchIssuedBooks = createAsyncThunk(
   "books/fetchIssuedBooks",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(issuedBooksUrl);
+      const response = await retry(() => axios.get(issuedBooksUrl));
       return response.data;
     } catch (error) {
       console.error(
         "Fetch issued books error:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
+        error.response?.status
       );
       return rejectWithValue(
         error.response?.data?.message || "Error fetching issued books"
@@ -46,10 +58,13 @@ export const addBook = createAsyncThunk(
   "books/addBook",
   async (bookData, { rejectWithValue }) => {
     try {
-      const bookWithId = { id: uuidv4(), ...bookData };
-      const response = await axios.post(booksUrl, bookWithId, {
-        headers: { "Content-Type": "application/json" },
-      });
+      // Remove id from payload to let json-server generate it
+      const { id, ...cleanedBookData } = bookData;
+      const response = await retry(() =>
+        axios.post(booksUrl, cleanedBookData, {
+          headers: { "Content-Type": "application/json" },
+        })
+      );
       return response.data;
     } catch (error) {
       console.error("Add book error:", error.response?.data || error.message);
@@ -67,12 +82,14 @@ export const updateBook = createAsyncThunk(
       if (!id) throw new Error("Book ID is undefined");
       const cleanedBook = Object.fromEntries(
         Object.entries(updatedBook).filter(
-          ([ value]) => value != null && value !== ""
+          ([_, value]) => value != null && value !== ""
         )
       );
-      const response = await axios.patch(`${booksUrl}/${id}`, cleanedBook, {
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await retry(() =>
+        axios.patch(`${booksUrl}/${id}`, cleanedBook, {
+          headers: { "Content-Type": "application/json" },
+        })
+      );
       return response.data;
     } catch (error) {
       console.error(
@@ -90,7 +107,7 @@ export const deleteBook = createAsyncThunk(
   "books/deleteBook",
   async (id, { rejectWithValue }) => {
     try {
-      await axios.delete(`${booksUrl}/${id}`);
+      await retry(() => axios.delete(`${booksUrl}/${id}`));
       return id;
     } catch (error) {
       console.error(
@@ -108,29 +125,42 @@ export const issueBook = createAsyncThunk(
   "books/issueBook",
   async ({ bookId, copyId, issueData }, { rejectWithValue }) => {
     try {
+      // Ensure issueData does not include an id to let json-server generate it
+      const { id, ...cleanedIssueData } = issueData;
       // Send issuance request
-      const issueResponse = await axios.post(
-        issuedBooksUrl,
-        {
-          ...issueData,
-          bookId,
-          copyId,
-        },
-        {
-          headers: { "Content-Type": "application/json" },
-        }
+      const issueResponse = await retry(() =>
+        axios.post(
+          issuedBooksUrl,
+          {
+            bookId,
+            copyId,
+            memberId: cleanedIssueData.memberId,
+            issuedBy: cleanedIssueData.issuedBy,
+            issueDate: cleanedIssueData.issueDate,
+            dueDate: cleanedIssueData.dueDate,
+            returnDate: null,
+            status: cleanedIssueData.status,
+            renewals: cleanedIssueData.renewals,
+          },
+          { headers: { "Content-Type": "application/json" } }
+        )
       );
 
       // Update book copy availability
-      const bookResponse = await axios.get(`${booksUrl}/${bookId}`);
+      const bookResponse = await retry(() => axios.get(`${booksUrl}/${bookId}`));
       const book = bookResponse.data;
+      if (!book.copies || !book.copies.find((c) => c.id === copyId)) {
+        throw new Error("Invalid copy ID or book not found.");
+      }
       const updatedCopies = book.copies.map((copy) =>
         copy.id === copyId ? { ...copy, availability: "issued" } : copy
       );
-      const updatedBookResponse = await axios.patch(
-        `${booksUrl}/${bookId}`,
-        { copies: updatedCopies },
-        { headers: { "Content-Type": "application/json" } }
+      const updatedBookResponse = await retry(() =>
+        axios.patch(
+          `${booksUrl}/${bookId}`,
+          { copies: updatedCopies },
+          { headers: { "Content-Type": "application/json" } }
+        )
       );
 
       return {
@@ -140,7 +170,8 @@ export const issueBook = createAsyncThunk(
     } catch (error) {
       console.error(
         "Issue book API error:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
+        error.response?.status
       );
       return rejectWithValue(
         error.response?.data?.message || "Failed to issue book"
@@ -243,12 +274,17 @@ const booksSlice = createSlice({
       })
       .addCase(issueBook.fulfilled, (state, action) => {
         state.loading = false;
-        state.issuedBooks.push(action.payload.issuedBook);
+        const { issuedBook, updatedBook } = action.payload;
+        // Add the issued book to the issuedBooks state
+        state.issuedBooks.push(issuedBook);
+        // Update the book in the books state with the updated copies
         const bookIndex = state.books.findIndex(
-          (book) => book.id === action.payload.updatedBook.id
+          (book) => book.id === updatedBook.id
         );
         if (bookIndex !== -1) {
-          state.books[bookIndex] = action.payload.updatedBook;
+          state.books[bookIndex] = updatedBook;
+        } else {
+          state.error = "Book not found in state after issuing";
         }
       })
       .addCase(issueBook.rejected, (state, action) => {
