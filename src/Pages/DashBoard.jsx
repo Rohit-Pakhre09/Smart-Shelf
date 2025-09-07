@@ -37,6 +37,11 @@ ChartJS.register(
 // URLs
 const membersUrl = "https://smart-shelf-server-qm2u.onrender.com/members";
 
+// Title
+useEffect(() => {
+  document.title = "Dashboard | Smart Shelf"
+}, [])
+
 const DashBoard = () => {
   const { lightTheme, open } = useContext(AppContext);
   const dispatch = useDispatch();
