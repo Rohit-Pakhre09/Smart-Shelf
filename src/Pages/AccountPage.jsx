@@ -1,9 +1,9 @@
 import { useContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { AppContext } from "../contexts/AppProvider";
 import Footer from "../components/Footer";
-import { useNavigate } from "react-router-dom";
 
 const AccountPage = () => {
   const { lightTheme, open } = useContext(AppContext);
@@ -70,7 +70,8 @@ const AccountPage = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // Check if file size > 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        // Check if file size > 5MB
         alert("Image size exceeds 5MB. Please choose a smaller image.");
         return;
       }
@@ -148,236 +149,227 @@ const AccountPage = () => {
               Account Management
             </p>
 
-            <div className="flex flex-col lg:flex-row gap-6 p-3 mt-5 mb-20">
-              {/* Profile Image */}
-              <div className="relative w-32 h-32 lg:w-40 lg:h-40 flex-shrink-0">
-                {profileImage && !imageError ? (
-                  <img
-                    src={profileImage}
-                    alt="Profile"
-                    className="w-full h-full rounded-full object-cover border-2 border-gray-300"
-                    onError={() => setImageError(true)}
-                  />
-                ) : (
-                  <div
-                    className={`w-full h-full rounded-full flex items-center justify-center text-3xl lg:text-4xl font-bold transition-all duration-300 animation ${lightTheme ? "bg-gray-800 text-white" : "bg-gray-200 text-gray-700"
-                      } border-2 border-gray-300`}
-                  >
-                    {getInitial()}
-                  </div>
-                )}
-                <div className="absolute bottom-0 right-0 flex gap-2">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    id="profileImageInput"
-                    className="hidden"
-                    onChange={handleImageChange}
-                  />
-                  <label
-                    htmlFor="profileImageInput"
-                    className={`rounded-full w-10 h-10 flex items-center justify-center cursor-pointer text-lg transition-all duration-300 animation ${lightTheme
-                      ? "bg-blue-500 text-white hover:bg-blue-600"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
-                      }`}
-                    title="Upload Profile Image"
-                  >
-                    +
-                  </label>
-                  {profileImage && !imageError && (
-                    <button
-                      onClick={handleRemoveImage}
-                      className={`rounded-full w-10 h-10 flex items-center justify-center cursor-pointer text-lg transition-all duration-300 animation ${lightTheme
-                        ? "bg-red-500 text-white hover:bg-red-600"
-                        : "bg-red-600 text-white hover:bg-red-700"
-                        }`}
-                      title="Remove Profile Image"
-                    >
-                      −
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Librarian Details */}
-              <div className="flex-1 w-full">
-                <h3
-                  className={`text-xl font-semibold mb-4 transition-all duration-300 animation ${lightTheme ? "text-white" : "text-black"
-                    }`}
-                >
-                  Librarian Details
-                </h3>
-                <div className="grid gap-4">
-                  <div>
-                    <label
-                      className={`block text-sm font-medium transition-all duration-300 animation ${lightTheme ? "text-gray-300" : "text-gray-700"
-                        }`}
-                    >
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={librarianDetails.email}
-                      onChange={handleInputChange}
-                      className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
-                        ? isEditing
-                          ? "bg-gray-900 text-white border-gray-600"
-                          : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
-                        : isEditing
-                          ? "bg-white text-black border-gray-300"
-                          : "bg-gray-100 text-black border-gray-300 cursor-not-allowed"
-                        }`}
-                      disabled={!isEditing}
-                      placeholder="Enter your email"
+            <div className="min-h-full flex flex-col gap-5 p-3 mb-20">
+              <div className="flex flex-col lg:flex-row gap-6 mb-10">
+                {/* Profile Image */}
+                <div className="relative w-32 h-32 lg:w-40 lg:h-40 flex-shrink-0">
+                  {profileImage && !imageError ? (
+                    <img
+                      src={profileImage}
+                      alt="Profile"
+                      className="w-full h-full rounded-full object-cover border-2 border-gray-300"
+                      onError={() => setImageError(true)}
                     />
-                  </div>
-                  <div>
-                    <label
-                      className={`block text-sm font-medium transition-all duration-300 animation ${lightTheme ? "text-gray-300" : "text-gray-700"
-                        }`}
-                    >
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={librarianDetails.name}
-                      onChange={handleInputChange}
-                      className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
-                        ? isEditing
-                          ? "bg-gray-900 text-white border-gray-600"
-                          : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
-                        : isEditing
-                          ? "bg-white text-black border-gray-300"
-                          : "bg-gray-100 text-black border-gray-300 cursor-not-allowed"
-                        }`}
-                      disabled={!isEditing}
-                      placeholder="Enter your name"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className={`block text-sm font-medium transition-all duration-300 animation ${lightTheme ? "text-gray-300" : "text-gray-700"
-                        }`}
-                    >
-                      Date of Birth
-                    </label>
-                    <input
-                      type="date"
-                      name="dob"
-                      value={librarianDetails.dob}
-                      onChange={handleInputChange}
-                      className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
-                        ? isEditing
-                          ? "bg-gray-900 text-white border-gray-600"
-                          : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
-                        : isEditing
-                          ? "bg-white text-black border-gray-300"
-                          : "bg-gray-100 text-black border-gray-300 cursor-not-allowed"
-                        }`}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className={`block text-sm font-medium transition-all duration-300 animation ${lightTheme ? "text-gray-300" : "text-gray-700"
-                        }`}
-                    >
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={librarianDetails.phone}
-                      onChange={handleInputChange}
-                      className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
-                        ? isEditing
-                          ? "bg-gray-900 text-white border-gray-600"
-                          : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
-                        : isEditing
-                          ? "bg-white text-black border-gray-300"
-                          : "bg-gray-100 text-black border-gray-300 cursor-not-allowed"
-                        }`}
-                      disabled={!isEditing}
-                      placeholder="Enter your phone number"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className={`block text-sm font-medium transition-all duration-300 animation ${lightTheme ? "text-gray-300" : "text-gray-700"
-                        }`}
-                    >
-                      Address
-                    </label>
-                    <textarea
-                      name="address"
-                      value={librarianDetails.address}
-                      onChange={handleInputChange}
-                      className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
-                        ? isEditing
-                          ? "bg-gray-900 text-white border-gray-600"
-                          : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
-                        : isEditing
-                          ? "bg-white text-black border-gray-300"
-                          : "bg-gray-100 text-black border-gray-300 cursor-not-allowed"
-                        }`}
-                      disabled={!isEditing}
-                      placeholder="Enter your address"
-                      rows="4"
-                    />
-                  </div>
-                </div>
-
-                {/* Edit/Save Buttons */}
-                <div className="mt-4 flex gap-3">
-                  {isEditing ? (
-                    <>
-                      <button
-                        onClick={handleSave}
-                        className={`w-32 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme
-                          ? "bg-green-600 text-white hover:bg-green-700"
-                          : "bg-green-500 text-white hover:bg-green-600"
-                          } cursor-pointer`}
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setIsEditing(false)}
-                        className={`w-32 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme
-                          ? "bg-gray-600 text-white hover:bg-gray-700"
-                          : "bg-gray-500 text-white hover:bg-gray-600"
-                          } cursor-pointer`}
-                      >
-                        Cancel
-                      </button>
-                    </>
                   ) : (
+                    <div
+                      className={`w-full h-full rounded-full flex items-center justify-center text-3xl lg:text-4xl font-bold transition-all duration-300 animation ${lightTheme ? "bg-gray-800 text-white" : "bg-gray-200 text-gray-700"
+                        } border-2 border-gray-300`}
+                    >
+                      {getInitial()}
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 right-0 flex gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="profileImageInput"
+                      className="hidden"
+                      onChange={handleImageChange}
+                    />
+                    <label
+                      htmlFor="profileImageInput"
+                      className={`rounded-full w-10 h-10 flex items-center justify-center cursor-pointer text-lg transition-all duration-300 animation ${lightTheme ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-blue-600 text-white hover:bg-blue-700"
+                        }`}
+                      title="Upload Profile Image"
+                    >
+                      +
+                    </label>
+                    {profileImage && !imageError && (
+                      <button
+                        onClick={handleRemoveImage}
+                        className={`rounded-full w-10 h-10 flex items-center justify-center cursor-pointer text-lg transition-all duration-300 animation ${lightTheme ? "bg-red-500 text-white hover:bg-red-600" : "bg-red-600 text-white hover:bg-red-700"
+                          }`}
+                        title="Remove Profile Image"
+                      >
+                        −
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Librarian Details */}
+                <div className="flex-1 w-full">
+                  <h3
+                    className={`text-xl font-semibold mb-4 transition-all duration-300 animation ${lightTheme ? "text-white" : "text-black"
+                      }`}
+                  >
+                    Librarian Details
+                  </h3>
+                  <div className="grid gap-4">
+                    <div>
+                      <label
+                        className={`block text-sm font-medium transition-all duration-300 animation ${lightTheme ? "text-gray-300" : "text-gray-700"
+                          }`}
+                      >
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={librarianDetails.email}
+                        onChange={handleInputChange}
+                        className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
+                          ? isEditing
+                            ? "bg-gray-900 text-white border-gray-600"
+                            : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
+                          : isEditing
+                            ? "bg-white text-black border-gray-300"
+                            : "bg-gray-100 text-black border-gray-300 cursor-not-allowed"
+                          }`}
+                        disabled={!isEditing}
+                        placeholder="Enter your email"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className={`block text-sm font-medium transition-all duration-300 animation ${lightTheme ? "text-gray-300" : "text-gray-700"
+                          }`}
+                      >
+                        Name
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={librarianDetails.name}
+                        onChange={handleInputChange}
+                        className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
+                          ? isEditing
+                            ? "bg-gray-900 text-white border-gray-600"
+                            : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
+                          : isEditing
+                            ? "bg-white text-black border-gray-300"
+                            : "bg-gray-100 text-black border-gray-300 cursor-not-allowed"
+                          }`}
+                        disabled={!isEditing}
+                        placeholder="Enter your name"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className={`block text-sm font-medium transition-all duration-300 animation ${lightTheme ? "text-gray-300" : "text-gray-700"
+                          }`}
+                      >
+                        Date of Birth
+                      </label>
+                      <input
+                        type="date"
+                        name="dob"
+                        value={librarianDetails.dob}
+                        onChange={handleInputChange}
+                        className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
+                          ? isEditing
+                            ? "bg-gray-900 text-white border-gray-600"
+                            : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
+                          : isEditing
+                            ? "bg-white text-black border-gray-300"
+                            : "bg-gray-100 text-black border-gray-300 cursor-not-allowed"
+                          }`}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className={`block text-sm font-medium transition-all duration-300 animation ${lightTheme ? "text-gray-300" : "text-gray-700"
+                          }`}
+                      >
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={librarianDetails.phone}
+                        onChange={handleInputChange}
+                        className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
+                          ? isEditing
+                            ? "bg-gray-900 text-white border-gray-600"
+                            : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
+                          : isEditing
+                            ? "bg-white text-black border-gray-300"
+                            : "bg-gray-100 text-black border-gray-300 cursor-not-allowed"
+                          }`}
+                        disabled={!isEditing}
+                        placeholder="Enter your phone number"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className={`block text-sm font-medium transition-all duration-300 animation ${lightTheme ? "text-gray-300" : "text-gray-700"
+                          }`}
+                      >
+                        Address
+                      </label>
+                      <textarea
+                        name="address"
+                        value={librarianDetails.address}
+                        onChange={handleInputChange}
+                        className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
+                          ? isEditing
+                            ? "bg-gray-900 text-white border-gray-600"
+                            : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
+                          : isEditing
+                            ? "bg-white text-black border-gray-300"
+                            : "bg-gray-100 text-black border-gray-300 cursor-not-allowed"
+                          }`}
+                        disabled={!isEditing}
+                        placeholder="Enter your address"
+                        rows="4"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Edit/Save Buttons */}
+                  <div className="mt-4 flex gap-3">
+                    {isEditing ? (
+                      <>
+                        <button
+                          onClick={handleSave}
+                          className={`w-32 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme ? "bg-green-600 text-white hover:bg-green-700" : "bg-green-500 text-white hover:bg-green-600"
+                            } cursor-pointer`}
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setIsEditing(false)}
+                          className={`w-32 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme ? "bg-gray-600 text-white hover:bg-gray-700" : "bg-gray-500 text-white hover:bg-gray-600"
+                            } cursor-pointer`}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className={`w-32 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-blue-600 text-white hover:bg-blue-700"
+                          } cursor-pointer`}
+                      >
+                        Edit
+                      </button>
+                    )}
                     <button
-                      onClick={() => setIsEditing(true)}
-                      className={`w-32 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme
-                        ? "bg-blue-500 text-white hover:bg-blue-600"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
+                      onClick={handleLogOut}
+                      className={`w-32 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme ? "bg-red-600 text-white hover:bg-red-700" : "bg-red-500 text-white hover:bg-red-600"
                         } cursor-pointer`}
                     >
-                      Edit
+                      Log Out
                     </button>
-                  )}
-                  <button
-                    onClick={handleLogOut}
-                    className={`w-32 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme
-                      ? "bg-red-600 text-white hover:bg-red-700"
-                      : "bg-red-500 text-white hover:bg-red-600"
-                      } cursor-pointer`}
-                  >
-                    Log Out
-                  </button>
+                  </div>
                 </div>
               </div>
-
+              {/* Footer Section */}
+              <Footer />
             </div>
-            {/* Footer Section */}
-            <Footer />
+
+
           </div>
         </section>
       </div>

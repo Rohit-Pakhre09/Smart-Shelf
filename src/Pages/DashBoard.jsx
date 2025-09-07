@@ -629,8 +629,6 @@ const DashBoard = () => {
               {/* Footer Section */}
               <Footer />
             </div>
-
-
           </div>
         </section>
       </div>
