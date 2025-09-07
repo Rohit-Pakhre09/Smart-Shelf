@@ -7,7 +7,7 @@ import BookManagement from '../Pages/BookManagement';
 import MemberManagement from '../Pages/MemberManagement';
 import IssuedBooks from '../Pages/IssuedBooks';
 import FinePage from '../Pages/FinesPage';
-import ErrorPage from '../pages/ErrorPage';
+import ErrorPage from '../pages/ErrorPage.jsx'; // Updated to correct folder name and extension
 import AccountPage from '../Pages/AccountPage';
 import PrivateRoute from '../router/PrivateRoute';
 
