@@ -74,7 +74,6 @@ const IssuedBooks = () => {
         status: book.status || "issued",
         renewals: book.renewals || 0,
       }));
-    console.log("Normalized Issued Books:", validBooks, "Count:", validBooks.length);
     if (validBooks.length !== data.length) {
       console.warn(`Filtered out ${data.length - validBooks.length} invalid issued book records`);
     }
@@ -191,7 +190,6 @@ const IssuedBooks = () => {
         }
         return 0;
       });
-    console.log("Filtered Books Count:", filtered.length);
     return filtered;
   }, [issuedBooks, debouncedSearchQuery, debouncedSortBy]);
 
@@ -201,21 +199,12 @@ const IssuedBooks = () => {
   const currentIssuedBooks = filteredBooks.slice(indexOfFirstBook, indexOfLastBook);
   const totalPages = Math.ceil(filteredBooks.length / booksPerPage);
 
-  // Log for debugging
-  useEffect(() => {
-    console.log("Issued Books State:", issuedBooks, "Count:", issuedBooks.length);
-    console.log("Filtered Books:", filteredBooks, "Count:", filteredBooks.length);
-    console.log("Current Page Books:", currentIssuedBooks, "Count:", currentIssuedBooks.length);
-    console.log("isLoading State:", isLoading);
-  }, [issuedBooks, filteredBooks, currentIssuedBooks, isLoading]);
-
   // Fetch data with retry mechanism
   useEffect(() => {
     isMounted.current = true;
     const abortController = new AbortController();
 
     const fetchData = async (retries = 5) => {
-      console.log("Starting fetchData, isLoading:", isLoading);
       setIsLoading(true);
       try {
         // Simulate slight delay for testing spinner visibility (remove in production if not needed)
@@ -238,10 +227,6 @@ const IssuedBooks = () => {
 
         if (!isMounted.current) return;
 
-        console.log("Raw Issued Books Response:", JSON.stringify(issuedBooksRes.data, null, 2));
-        console.log("Raw Books Response:", JSON.stringify(booksRes.data, null, 2));
-        console.log("Raw Members Response:", JSON.stringify(membersRes.data, null, 2));
-
         if (!issuedBooksRes.data.length) {
           setError("No issued books found. Please check the backend.");
           setIsLoading(false);
@@ -259,7 +244,6 @@ const IssuedBooks = () => {
         }
 
         const normalizedIssuedBooks = normalizeIssuedBooks(issuedBooksRes.data);
-        console.log("Normalized Issued Books:", JSON.stringify(normalizedIssuedBooks, null, 2));
 
         setIssuedBooks(normalizedIssuedBooks);
         setBooks(booksRes.data);
@@ -281,7 +265,6 @@ const IssuedBooks = () => {
         }
       } catch (err) {
         if (err.name === "AbortError") {
-          console.log("Fetch aborted due to component unmount");
         } else if (retries > 0) {
           console.warn(`Fetch failed, retrying (${retries} attempts left):`, err);
           await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -292,7 +275,6 @@ const IssuedBooks = () => {
         }
       } finally {
         if (isMounted.current) {
-          console.log("Setting isLoading to false");
           setIsLoading(false);
         }
       }
@@ -311,7 +293,6 @@ const IssuedBooks = () => {
     try {
       const response = await axios.get(issuedBooksUrl);
       if (isMounted.current) {
-        console.log("Refetched Issued Books:", response.data, "Count:", response.data.length);
         const normalized = normalizeIssuedBooks(response.data);
         setIssuedBooks(normalized);
         setActionError(null);
@@ -331,8 +312,6 @@ const IssuedBooks = () => {
 
   // Mark book as returned
   const markAsReturned = useCallback(async (id) => {
-    console.log("Starting markAsReturned for id:", id);
-    console.log("Available ids:", issuedBooks.map((book) => book.id));
     const issuedBook = issuedBooks.find((book) => book.id === id);
     if (!issuedBook) {
       console.error("Issued book not found for id:", id);
@@ -347,13 +326,11 @@ const IssuedBooks = () => {
     }
 
     const isBookOverdue = isOverdue(issuedBook.status, issuedBook.dueDate);
-    console.log("Is book overdue?", isBookOverdue);
     if (isBookOverdue) {
       const confirmReturn = window.confirm(
         "This book is overdue. Are you sure you want to mark it as returned?"
       );
       if (!confirmReturn) {
-        console.log("Overdue return cancelled");
         return;
       }
     } else {
@@ -361,7 +338,6 @@ const IssuedBooks = () => {
         `Are you sure you want to mark "${getBook(issuedBook)?.title || "this book"}" as returned?`
       );
       if (!confirmReturn) {
-        console.log("Regular return cancelled");
         return;
       }
     }
@@ -384,38 +360,31 @@ const IssuedBooks = () => {
       for (const identifier of identifiers) {
         for (const endpoint of endpoints) {
           const url = `${endpoint}/${identifier}`;
-          console.log(`Trying endpoint: ${url}`);
           try {
-            console.log(`Sending PATCH to: ${url}`);
             response = await axios.patch(
               url,
               { status: "returned", returnDate: today },
               { signal: abortController.signal }
             );
-            console.log(`PATCH response from ${url}:`, response.data);
             break;
           } catch (patchErr) {
             console.warn(`PATCH to ${url} failed:`, patchErr.response?.data || patchErr.message);
             if (patchErr.response?.status === 404) {
               try {
-                console.log(`Trying PUT to: ${url}`);
                 response = await axios.put(
                   url,
                   { ...issuedBook, status: "returned", returnDate: today },
                   { signal: abortController.signal }
                 );
-                console.log(`PUT response from ${url}:`, response.data);
                 break;
               } catch (putErr) {
                 console.warn(`PUT to ${url} failed:`, putErr.response?.data || putErr.message);
                 try {
-                  console.log(`Trying POST to: ${url}/return`);
                   response = await axios.post(
                     `${url}/return`,
                     { status: "returned", returnDate: today },
                     { signal: abortController.signal }
                   );
-                  console.log(`POST response from ${url}/return:`, response.data);
                   break;
                 } catch (postErr) {
                   console.warn(`POST to ${url}/return failed:`, postErr.response?.data || postErr.message);
@@ -441,13 +410,11 @@ const IssuedBooks = () => {
         const updatedCopies = bookToUpdate.copies.map((copy) =>
           copy.id === bookId ? { ...copy, availability: "available" } : copy
         );
-        console.log("Updating book with ID:", bookToUpdate.id, "Copies:", updatedCopies);
         const bookResponse = await axios.patch(
           `${booksUrl}/${bookToUpdate.id}`,
           { copies: updatedCopies },
           { signal: abortController.signal }
         );
-        console.log("Book PATCH response:", bookResponse.data);
         setBooks((prev) =>
           prev.map((b) =>
             b.id === bookToUpdate.id ? { ...b, copies: updatedCopies } : b
@@ -465,17 +432,14 @@ const IssuedBooks = () => {
             ? { ...book, status: "returned", returnDate: today }
             : book
         );
-        console.log("Updated issuedBooks:", updatedBooks, "Count:", updatedBooks.length);
         return updatedBooks;
       });
       setReturnButtonText((prev) => {
         const updatedText = { ...prev, [id]: "Returned" };
-        console.log("Updated returnButtonText:", updatedText);
         return updatedText;
       });
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Request aborted");
       } else {
         console.error("Error marking book as returned:", err.response?.data || err.message);
         setActionError(
@@ -486,7 +450,6 @@ const IssuedBooks = () => {
     } finally {
       setActionLoading((prev) => {
         const updated = { ...prev, [id]: { ...prev[id], return: false } };
-        console.log("Updated actionLoading:", updated);
         return updated;
       });
     }

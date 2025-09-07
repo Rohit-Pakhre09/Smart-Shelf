@@ -1,8 +1,6 @@
 import { useContext } from "react";
-import Sidebar from "./components/Sidebar";
-import Navbar from "./components/Navbar";
 import { AppContext } from "./contexts/AppProvider";
-import AllRoutes from "./router/AllRoutes"; // import your routes file
+import AllRoutes from "./router/AllRoutes"; 
 
 const App = () => {
   const { lightTheme } = useContext(AppContext);
@@ -15,7 +13,7 @@ const App = () => {
       {/* Main Content Area */}
       <section className="flex flex-col flex-1 min-h-screen">
         <div className="p-0 flex-1">
-          <AllRoutes /> {/* <-- here your pages will load */}
+          <AllRoutes /> 
         </div>
       </section>
     </main>
