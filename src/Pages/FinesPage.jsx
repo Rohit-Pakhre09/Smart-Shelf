@@ -5,7 +5,7 @@ import Sidebar from "../components/Sidebar";
 import { AppContext } from "../contexts/AppProvider";
 import Footer from "../components/Footer";
 import { fetchFines, editFine, markAsPaid } from "../modules/finesSlice";
-import { PencilIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, CheckCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 const FinesPage = () => {
   const { lightTheme, open } = useContext(AppContext);
@@ -30,7 +30,7 @@ const FinesPage = () => {
 
   // Log context and state issues
   useEffect(() => {
-    if (!lightTheme === undefined || open === undefined) {
+    if (lightTheme === undefined || open === undefined) {
       console.error(
         "AppContext is missing required values. Ensure FinesPage is wrapped in AppContext.Provider. Using fallback values: { lightTheme: false, open: false }"
       );
@@ -70,6 +70,12 @@ const FinesPage = () => {
     });
   };
 
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm((prev) => ({ ...prev, [name]: value }));
+  };
+
   // Handle Edit form submission
   const handleEditSubmit = async (e) => {
     e.preventDefault();
@@ -78,6 +84,22 @@ const FinesPage = () => {
       dispatch(editFine({ id: editingFine.id, updates: editForm, customApiUrl }));
       setEditingFine(null);
     }
+  };
+
+  // Handle Cancel button click
+  const handleCancelEdit = () => {
+    setEditingFine(null);
+    setEditForm({
+      id: "",
+      memberId: "",
+      bookId: "",
+      amount: "",
+      status: "",
+      reason: "",
+      calculatedOn: "",
+      paymentMethod: "",
+      paymentDate: "",
+    });
   };
 
   // Handle Mark as Paid button click
@@ -107,14 +129,12 @@ const FinesPage = () => {
       </div>
 
       {/* Navbar + Content */}
-      <div className="flex flex-col flex-1 transition-all duration-500">
+      <div className="flex flex-col flex-1 animation">
         <Navbar />
 
-        <section className="flex-1 lg:pt-[70px] m-0 lg:m-2.5 transition-all duration-500">
+        <section className="flex-1 lg:pt-[70px] m-0 lg:m-2.5 animation">
           <div
-            className={`h-[87vh] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 mt-6 ${open
-              ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
-              : "lg:ml-24 lg:w-[calc(100%-6rem)]"
+            className={`h-[87vh] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl animation mt-6 ${open ? "lg:ml-68 lg:w-[calc(100%-17rem)]" : "lg:ml-24 lg:w-[calc(100%-6rem)]"
               }`}
           >
             {/* Warning Notification */}
@@ -135,7 +155,7 @@ const FinesPage = () => {
                 <button
                   onClick={handleRetry}
                   className={`mt-2 px-3 py-1 rounded-md text-sm font-semibold cursor-pointer ${lightTheme ? "bg-blue-400 text-gray-800" : "bg-blue-500 text-white"
-                    } hover:bg-blue-600 transition-colors duration-200 w-full sm:w-auto`}
+                    } hover:bg-blue-600 animation w-full sm:w-auto`}
                 >
                   Retry
                 </button>
@@ -144,8 +164,7 @@ const FinesPage = () => {
 
             {/* Fines Management Heading */}
             <p
-              className={`${lightTheme ? "text-white" : "text-black"
-                } text-3xl pb-3 mt-5 pl-5 font-bold transition-all duration-500 animate-fadeIn`}
+              className={`${lightTheme ? "text-white" : "text-black"} text-3xl pb-3 mt-5 pl-5 font-bold animation animate-fadeIn`}
             >
               Fines Management
             </p>
@@ -157,14 +176,14 @@ const FinesPage = () => {
                 </div>
               ) : error ? (
                 <p
-                  className={`text-left transition-all duration-500 animate-fadeIn text-lg pl-5 ${lightTheme ? "text-red-400" : "text-red-500"
+                  className={`text-left animation animate-fadeIn text-lg pl-5 ${lightTheme ? "text-red-400" : "text-red-500"
                     }`}
                 >
                   {error} {error.includes("404") && "(API endpoint not found. Using mock data or local updates.)"}
                 </p>
               ) : fines.length === 0 ? (
                 <p
-                  className={`text-left transition-all duration-500 animate-fadeIn text-lg pl-5 ${lightTheme ? "text-white" : "text-black"
+                  className={`text-left animation animate-fadeIn text-lg pl-5 ${lightTheme ? "text-white" : "text-black"
                     }`}
                 >
                   No fines found.
@@ -174,18 +193,18 @@ const FinesPage = () => {
                   {fines.map((fine) => (
                     <div
                       key={fine.id}
-                      className={`relative p-3 sm:p-4 lg:p-5 rounded-xl shadow-md hover:shadow-lg transform transition-all duration-300 animate-fadeIn min-w-[250px] w-full sm:max-w-md ${lightTheme ? "bg-gray-800 text-white" : "bg-white text-black"
+                      className={`relative p-3 sm:p-4 lg:p-5 rounded-xl shadow-md hover:shadow-lg transform animation animate-fadeIn min-w-[250px] w-full sm:max-w-md ${lightTheme ? "bg-gray-800 text-white" : "bg-white text-black"
                         }`}
                     >
                       {/* Status Badge */}
                       <div
                         className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-semibold ${fine.status === "paid"
-                          ? lightTheme
-                            ? "bg-green-400 text-gray-800"
-                            : "bg-green-500 text-white"
-                          : lightTheme
-                            ? "bg-red-400 text-gray-800"
-                            : "bg-red-500 text-white"
+                            ? lightTheme
+                              ? "bg-green-400 text-gray-800"
+                              : "bg-green-500 text-white"
+                            : lightTheme
+                              ? "bg-red-400 text-gray-800"
+                              : "bg-red-500 text-white"
                           }`}
                       >
                         {fine.status.charAt(0).toUpperCase() + fine.status.slice(1)}
@@ -235,7 +254,7 @@ const FinesPage = () => {
                         <button
                           onClick={() => handleEditClick(fine)}
                           className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold cursor-pointer ${lightTheme ? "bg-blue-400 text-gray-800" : "bg-blue-500 text-white"
-                            } hover:bg-blue-600 transition-colors duration-200 w-full sm:w-auto`}
+                            } hover:bg-blue-600 animation w-full sm:w-auto`}
                         >
                           <PencilIcon className="h-4 w-4" />
                           Edit
@@ -244,7 +263,7 @@ const FinesPage = () => {
                           <button
                             onClick={() => handleMarkAsPaid(fine.id)}
                             className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold cursor-pointer ${lightTheme ? "bg-green-400 text-gray-800" : "bg-green-500 text-white"
-                              } hover:bg-green-600 transition-colors duration-200 w-full sm:w-auto`}
+                              } hover:bg-green-600 animation w-full sm:w-auto`}
                           >
                             <CheckCircleIcon className="h-4 w-4" />
                             Mark as Paid
@@ -256,6 +275,138 @@ const FinesPage = () => {
                 </div>
               )}
             </div>
+
+            {/* Edit Modal */}
+            {editingFine && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div
+                  className={`p-6 rounded-xl shadow-lg max-w-md w-full ${lightTheme ? "bg-gray-800 text-white" : "bg-white text-black"
+                    }`}
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold">Edit Fine</h2>
+                    <button className="cursor-pointer" onClick={handleCancelEdit}>
+                      <XMarkIcon className="h-6 w-6" />
+                    </button>
+                  </div>
+                  <form onSubmit={handleEditSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium">Member ID</label>
+                      <input
+                        type="text"
+                        name="memberId"
+                        value={editForm.memberId}
+                        onChange={handleInputChange}
+                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                          }`}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Book ID</label>
+                      <input
+                        type="text"
+                        name="bookId"
+                        value={editForm.bookId}
+                        onChange={handleInputChange}
+                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                          }`}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Amount</label>
+                      <input
+                        type="number"
+                        name="amount"
+                        value={editForm.amount}
+                        onChange={handleInputChange}
+                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                          }`}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Status</label>
+                      <select
+                        name="status"
+                        value={editForm.status}
+                        onChange={handleInputChange}
+                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                          }`}
+                        required
+                      >
+                        <option value="paid">Paid</option>
+                        <option value="unpaid">Unpaid</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Reason</label>
+                      <input
+                        type="text"
+                        name="reason"
+                        value={editForm.reason}
+                        onChange={handleInputChange}
+                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                          }`}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Calculated On</label>
+                      <input
+                        type="date"
+                        name="calculatedOn"
+                        value={editForm.calculatedOn}
+                        onChange={handleInputChange}
+                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                          }`}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Payment Method</label>
+                      <input
+                        type="text"
+                        name="paymentMethod"
+                        value={editForm.paymentMethod}
+                        onChange={handleInputChange}
+                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                          }`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium">Payment Date</label>
+                      <input
+                        type="date"
+                        name="paymentDate"
+                        value={editForm.paymentDate}
+                        onChange={handleInputChange}
+                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                          }`}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        className={`flex-1 px-3 py-1.5 rounded-md text-sm font-semibold cursor-pointer ${lightTheme ? "bg-blue-400 text-gray-800" : "bg-blue-500 text-white"
+                          } hover:bg-blue-600 animation cursor-pointer`}
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className={`flex-1 px-3 py-1.5 rounded-md text-sm font-semibold cursor-pointer ${lightTheme ? "bg-gray-400 text-gray-800" : "bg-gray-500 text-white"
+                          } hover:bg-gray-600 animation cursor-pointer`}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
 
             {/* Footer Section */}
             <Footer />

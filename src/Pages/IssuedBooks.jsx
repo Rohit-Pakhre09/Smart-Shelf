@@ -1,14 +1,33 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState, useRef, useCallback } from "react";
+import PropTypes from "prop-types";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { AppContext } from "../contexts/AppProvider";
 import Footer from "../components/Footer";
 import axios from "axios";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckCircle, Calendar, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
+import issuedBookFallback from "../assets/issueBooksFallback.svg"
 
+// API Endpoints
 const booksUrl = "https://smart-shelf-server-qm2u.onrender.com/books";
 const membersUrl = "https://smart-shelf-server-qm2u.onrender.com/members";
 const issuedBooksUrl = "https://smart-shelf-server-qm2u.onrender.com/issuedBooks";
+const alternativeIssuedBooksUrl = "https://smart-shelf-server-qm2u.onrender.com/issued-books";
+const issuesUrl = "https://smart-shelf-server-qm2u.onrender.com/issues";
+
+// Debouncing Hook
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 const IssuedBooks = () => {
   const { lightTheme, open } = useContext(AppContext);
@@ -17,48 +36,76 @@ const IssuedBooks = () => {
   const [members, setMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [booksPerPage] = useState(8);
   const [actionLoading, setActionLoading] = useState({});
   const [actionError, setActionError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [returnButtonText, setReturnButtonText] = useState({});
+  const [booksPerPage] = useState(8);
+  const isMounted = useRef(true);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const debouncedSortBy = useDebounce(sortBy, 300);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [issuedBooksRes, booksRes, membersRes] = await Promise.all([
-          axios.get(issuedBooksUrl),
-          axios.get(booksUrl),
-          axios.get(membersUrl),
-        ]);
+  // Normalize issuedBooks data
+  const normalizeIssuedBooks = (data) => {
+    const validBooks = data
+      .filter((book) => {
+        const copyId = book.copyId || book.bookId || book.id;
+        const memberId = book.memberId;
+        if (!copyId || typeof copyId !== "string" || !copyId.includes("-")) {
+          console.warn("Skipping issued book with invalid copyId:", book);
+          return false;
+        }
+        if (!memberId || typeof memberId !== "string") {
+          console.warn("Skipping issued book with invalid memberId:", book);
+          return false;
+        }
+        return true;
+      })
+      .map((book) => ({
+        id: book.issueId || book.id || `unknown-${Math.random().toString(36).substr(2, 9)}`,
+        bookId: book.copyId || book.bookId || book.id,
+        memberId: book.memberId,
+        issuedBy: book.issuedBy || "N/A",
+        issueDate: book.issueDate || new Date().toISOString().split("T")[0],
+        dueDate: book.dueDate || new Date(new Date().setDate(new Date().getDate() + 14)).toISOString().split("T")[0],
+        returnDate: book.returnDate || null,
+        status: book.status || "issued",
+        renewals: book.renewals || 0,
+      }));
+    console.log("Normalized Issued Books:", validBooks, "Count:", validBooks.length);
+    if (validBooks.length !== data.length) {
+      console.warn(`Filtered out ${data.length - validBooks.length} invalid issued book records`);
+    }
+    return validBooks;
+  };
 
-        setIssuedBooks(issuedBooksRes.data.filter((book) => book.status === "issued"));
-        setBooks(booksRes.data);
-        setMembers(membersRes.data);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError("Failed to load data. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
+  // Utility functions
   const getBook = (issuedBook) => {
-    const copyId = issuedBook.copyId || issuedBook.id;
-    if (!copyId) return null;
+    const bookId = issuedBook.bookId;
+    if (!bookId || typeof bookId !== "string") {
+      console.warn("Invalid or missing bookId for issued book:", issuedBook);
+      return { title: "Unknown Book", img: null };
+    }
     const book = books.find((book) =>
-      book.copies?.some((copy) => copy.id === copyId)
+      book.copies?.some((copy) => copy.id === bookId)
     );
-    return book || null;
+    if (!book) {
+      console.warn("No book found for bookId:", bookId);
+    }
+    return book || { title: "Unknown Book", img: null };
   };
 
   const getMemberName = (memberId) => {
-    if (!memberId) return "Unknown Member";
+    if (!memberId || typeof memberId !== "string") {
+      console.warn("Invalid or missing memberId:", memberId);
+      return "Unknown Member";
+    }
     const member = members.find((member) => member.id === memberId);
+    if (!member) {
+      console.warn("No member found for memberId:", memberId);
+    }
     return member?.name || "Unknown Member";
   };
 
@@ -81,15 +128,23 @@ const IssuedBooks = () => {
     const isOverdue = status === "issued" && due && due < today;
 
     if (isOverdue) {
-      return "bg-red-100 text-red-700 border-red-200";
+      return lightTheme
+        ? "bg-red-900 text-red-300 border-red-700"
+        : "bg-red-100 text-red-700 border-red-200";
     }
     switch (status?.toLowerCase()) {
       case "returned":
-        return "bg-green-100 text-green-700 border-green-200";
+        return lightTheme
+          ? "bg-green-900 text-green-300 border-green-700"
+          : "bg-green-100 text-green-700 border-green-200";
       case "issued":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+        return lightTheme
+          ? "bg-yellow-900 text-yellow-300 border-yellow-700"
+          : "bg-yellow-100 text-yellow-700 border-yellow-200";
       default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return lightTheme
+          ? "bg-gray-700 text-gray-300 border-gray-600"
+          : "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
@@ -99,96 +154,343 @@ const IssuedBooks = () => {
     return status === "issued" && due && due < today;
   };
 
-  const markAsReturned = async (issueId) => {
-    setActionLoading((prev) => ({ ...prev, [issueId]: { ...prev[issueId], return: true } }));
+  const isDueToday = (status, dueDate) => {
+    const today = new Date();
+    const due = dueDate ? new Date(dueDate) : null;
+    return (
+      status === "issued" &&
+      due &&
+      due.getDate() === today.getDate() &&
+      due.getMonth() === today.getMonth() &&
+      due.getFullYear() === today.getFullYear()
+    );
+  };
+
+  // Filter and sort issued books
+  const filteredBooks = useMemo(() => {
+    const filtered = issuedBooks
+      .filter((issuedBook) => {
+        const book = getBook(issuedBook);
+        const memberName = getMemberName(issuedBook.memberId).toLowerCase();
+        const query = debouncedSearchQuery.toLowerCase();
+        return (
+          book?.title?.toLowerCase().includes(query) ||
+          memberName.includes(query) ||
+          issuedBook.id?.toLowerCase().includes(query)
+        );
+      })
+      .sort((a, b) => {
+        if (debouncedSortBy === "issueDate") {
+          return new Date(a.issueDate) - new Date(b.issueDate);
+        }
+        if (debouncedSortBy === "dueDate") {
+          return new Date(a.dueDate) - new Date(b.dueDate);
+        }
+        if (debouncedSortBy === "member") {
+          return getMemberName(a.memberId).localeCompare(getMemberName(b.memberId));
+        }
+        return 0;
+      });
+    console.log("Filtered Books Count:", filtered.length);
+    return filtered;
+  }, [issuedBooks, debouncedSearchQuery, debouncedSortBy]);
+
+  // Pagination
+  const indexOfLastBook = currentPage * booksPerPage;
+  const indexOfFirstBook = indexOfLastBook - booksPerPage;
+  const currentIssuedBooks = filteredBooks.slice(indexOfFirstBook, indexOfLastBook);
+  const totalPages = Math.ceil(filteredBooks.length / booksPerPage);
+
+  // Log for debugging
+  useEffect(() => {
+    console.log("Issued Books State:", issuedBooks, "Count:", issuedBooks.length);
+    console.log("Filtered Books:", filteredBooks, "Count:", filteredBooks.length);
+    console.log("Current Page Books:", currentIssuedBooks, "Count:", currentIssuedBooks.length);
+    console.log("isLoading State:", isLoading);
+  }, [issuedBooks, filteredBooks, currentIssuedBooks, isLoading]);
+
+  // Fetch data with retry mechanism
+  useEffect(() => {
+    isMounted.current = true;
+    const abortController = new AbortController();
+
+    const fetchData = async (retries = 5) => {
+      console.log("Starting fetchData, isLoading:", isLoading);
+      setIsLoading(true);
+      try {
+        // Simulate slight delay for testing spinner visibility (remove in production if not needed)
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        const [issuedBooksRes, booksRes, membersRes] = await Promise.all([
+          axios.get(issuedBooksUrl, { signal: abortController.signal }).catch((err) => {
+            console.warn("Issued books fetch failed:", err);
+            return { data: [] };
+          }),
+          axios.get(booksUrl, { signal: abortController.signal }).catch((err) => {
+            console.warn("Books fetch failed:", err);
+            return { data: [] };
+          }),
+          axios.get(membersUrl, { signal: abortController.signal }).catch((err) => {
+            console.warn("Members fetch failed:", err);
+            return { data: [] };
+          }),
+        ]);
+
+        if (!isMounted.current) return;
+
+        console.log("Raw Issued Books Response:", JSON.stringify(issuedBooksRes.data, null, 2));
+        console.log("Raw Books Response:", JSON.stringify(booksRes.data, null, 2));
+        console.log("Raw Members Response:", JSON.stringify(membersRes.data, null, 2));
+
+        if (!issuedBooksRes.data.length) {
+          setError("No issued books found. Please check the backend.");
+          setIsLoading(false);
+          return;
+        }
+        if (!booksRes.data.length) {
+          setError("No books found. Please check the backend.");
+          setIsLoading(false);
+          return;
+        }
+        if (!membersRes.data.length) {
+          setError("No members found. Please check the backend.");
+          setIsLoading(false);
+          return;
+        }
+
+        const normalizedIssuedBooks = normalizeIssuedBooks(issuedBooksRes.data);
+        console.log("Normalized Issued Books:", JSON.stringify(normalizedIssuedBooks, null, 2));
+
+        setIssuedBooks(normalizedIssuedBooks);
+        setBooks(booksRes.data);
+        setMembers(membersRes.data);
+        setError(null);
+
+        const unmatchedBooks = normalizedIssuedBooks.filter((b) => !books.some(book => book.copies?.some(copy => copy.id === b.bookId)));
+        const unmatchedMembers = normalizedIssuedBooks.filter((b) => !members.some(m => m.id === b.memberId));
+        if (unmatchedBooks.length || unmatchedMembers.length) {
+          console.warn("Unmatched Books:", unmatchedBooks);
+          console.warn("Unmatched Members:", unmatchedMembers);
+          if (retries > 0) {
+            console.warn(`Retrying fetch due to missing matches (${retries} attempts left)`);
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            return fetchData(retries - 1);
+          } else {
+            setError("Some issued books lack matching books or members. Displaying available data.");
+          }
+        }
+      } catch (err) {
+        if (err.name === "AbortError") {
+          console.log("Fetch aborted due to component unmount");
+        } else if (retries > 0) {
+          console.warn(`Fetch failed, retrying (${retries} attempts left):`, err);
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          return fetchData(retries - 1);
+        } else {
+          console.error("Error fetching data:", err);
+          setError("Failed to load data. Please try again later.");
+        }
+      } finally {
+        if (isMounted.current) {
+          console.log("Setting isLoading to false");
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted.current = false;
+      abortController.abort();
+    };
+  }, []);
+
+  // Refetch issued books
+  const refetchIssuedBooks = useCallback(async () => {
+    try {
+      const response = await axios.get(issuedBooksUrl);
+      if (isMounted.current) {
+        console.log("Refetched Issued Books:", response.data, "Count:", response.data.length);
+        const normalized = normalizeIssuedBooks(response.data);
+        setIssuedBooks(normalized);
+        setActionError(null);
+        normalized.forEach((issuedBook) => {
+          if (!getBook(issuedBook)) {
+            console.warn("Refetched issued book without matching book:", issuedBook);
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Error refetching issued books:", err);
+      if (isMounted.current) {
+        setActionError("Failed to refresh issued books. Please try again.");
+      }
+    }
+  }, []);
+
+  // Mark book as returned
+  const markAsReturned = useCallback(async (id) => {
+    console.log("Starting markAsReturned for id:", id);
+    console.log("Available ids:", issuedBooks.map((book) => book.id));
+    const issuedBook = issuedBooks.find((book) => book.id === id);
+    if (!issuedBook) {
+      console.error("Issued book not found for id:", id);
+      setActionError("Issued book not found in local data.");
+      return;
+    }
+
+    if (issuedBook.status === "returned") {
+      console.warn("Book already returned:", id);
+      setActionError("Book is already marked as returned.");
+      return;
+    }
+
+    const isBookOverdue = isOverdue(issuedBook.status, issuedBook.dueDate);
+    console.log("Is book overdue?", isBookOverdue);
+    if (isBookOverdue) {
+      const confirmReturn = window.confirm(
+        "This book is overdue. Are you sure you want to mark it as returned?"
+      );
+      if (!confirmReturn) {
+        console.log("Overdue return cancelled");
+        return;
+      }
+    } else {
+      const confirmReturn = window.confirm(
+        `Are you sure you want to mark "${getBook(issuedBook)?.title || "this book"}" as returned?`
+      );
+      if (!confirmReturn) {
+        console.log("Regular return cancelled");
+        return;
+      }
+    }
+
+    setActionLoading((prev) => ({ ...prev, [id]: { ...prev[id], return: true } }));
     setActionError(null);
+
     try {
       const today = new Date().toISOString().split("T")[0];
-      const issuedBook = issuedBooks.find((book) => book.issueId === issueId);
-      if (!issuedBook) {
-        throw new Error("Issued book not found in local state.");
+      const abortController = new AbortController();
+      let response;
+
+      const identifiers = [id, issuedBook.issueId].filter(Boolean);
+      const endpoints = [
+        issuedBooksUrl,
+        alternativeIssuedBooksUrl,
+        issuesUrl,
+      ];
+
+      for (const identifier of identifiers) {
+        for (const endpoint of endpoints) {
+          const url = `${endpoint}/${identifier}`;
+          console.log(`Trying endpoint: ${url}`);
+          try {
+            console.log(`Sending PATCH to: ${url}`);
+            response = await axios.patch(
+              url,
+              { status: "returned", returnDate: today },
+              { signal: abortController.signal }
+            );
+            console.log(`PATCH response from ${url}:`, response.data);
+            break;
+          } catch (patchErr) {
+            console.warn(`PATCH to ${url} failed:`, patchErr.response?.data || patchErr.message);
+            if (patchErr.response?.status === 404) {
+              try {
+                console.log(`Trying PUT to: ${url}`);
+                response = await axios.put(
+                  url,
+                  { ...issuedBook, status: "returned", returnDate: today },
+                  { signal: abortController.signal }
+                );
+                console.log(`PUT response from ${url}:`, response.data);
+                break;
+              } catch (putErr) {
+                console.warn(`PUT to ${url} failed:`, putErr.response?.data || putErr.message);
+                try {
+                  console.log(`Trying POST to: ${url}/return`);
+                  response = await axios.post(
+                    `${url}/return`,
+                    { status: "returned", returnDate: today },
+                    { signal: abortController.signal }
+                  );
+                  console.log(`POST response from ${url}/return:`, response.data);
+                  break;
+                } catch (postErr) {
+                  console.warn(`POST to ${url}/return failed:`, postErr.response?.data || postErr.message);
+                }
+              }
+            } else {
+              throw patchErr;
+            }
+          }
+        }
+        if (response) break;
       }
 
-      // Update issued book status
-      await axios.patch(`${issuedBooksUrl}/${issueId}`, {
-        status: "returned",
-        returnDate: today,
-      });
+      if (!response) {
+        throw new Error("All endpoints and methods failed");
+      }
 
-      // Update book copy status
-      const copyId = issuedBook.copyId || issuedBook.id;
+      const bookId = issuedBook.bookId;
       const bookToUpdate = books.find((book) =>
-        book.copies?.some((copy) => copy.id === copyId)
+        book.copies?.some((copy) => copy.id === bookId)
       );
-
       if (bookToUpdate) {
         const updatedCopies = bookToUpdate.copies.map((copy) =>
-          copy.id === copyId ? { ...copy, status: "available" } : copy
+          copy.id === bookId ? { ...copy, availability: "available" } : copy
         );
-        await axios.patch(`${booksUrl}/${bookToUpdate.id}`, {
-          copies: updatedCopies,
-        });
-
+        console.log("Updating book with ID:", bookToUpdate.id, "Copies:", updatedCopies);
+        const bookResponse = await axios.patch(
+          `${booksUrl}/${bookToUpdate.id}`,
+          { copies: updatedCopies },
+          { signal: abortController.signal }
+        );
+        console.log("Book PATCH response:", bookResponse.data);
         setBooks((prev) =>
           prev.map((b) =>
             b.id === bookToUpdate.id ? { ...b, copies: updatedCopies } : b
           )
         );
       } else {
-        console.warn("Book not found for copyId:", copyId);
+        console.warn("Book not found for bookId:", bookId);
+        setActionError("Book not found for the given book ID. Refreshing data...");
+        await refetchIssuedBooks();
       }
 
-      // Remove from issued books list
-      setIssuedBooks((prev) =>
-        prev.filter((book) => book.issueId !== issueId)
-      );
-    } catch (err) {
-      console.error("Error marking book as returned:", err);
-      if (err.response?.status === 404) {
-        setActionError(`Book with issue ID ${issueId} not found on the server.`);
-      } else {
-        setActionError("Failed to mark book as returned. Please try again.");
-      }
-    } finally {
-      setActionLoading((prev) => ({ ...prev, [issueId]: { ...prev[issueId], return: false } }));
-    }
-  };
-
-  const addFine = async (memberId, issueId) => {
-    setActionLoading((prev) => ({ ...prev, [issueId]: { ...prev[issueId], fine: true } }));
-    setActionError(null);
-    try {
-      const member = members.find((m) => m.id === memberId);
-      if (!member) {
-        throw new Error("Member not found.");
-      }
-      const fineAmount = 50;
-      await axios.patch(`${membersUrl}/${memberId}`, {
-        outstandingFines: (member?.outstandingFines || 0) + fineAmount,
+      setIssuedBooks((prev) => {
+        const updatedBooks = prev.map((book) =>
+          book.id === id
+            ? { ...book, status: "returned", returnDate: today }
+            : book
+        );
+        console.log("Updated issuedBooks:", updatedBooks, "Count:", updatedBooks.length);
+        return updatedBooks;
       });
-      setMembers((prev) =>
-        prev.map((m) =>
-          m.id === memberId
-            ? { ...m, outstandingFines: (m.outstandingFines || 0) + fineAmount }
-            : m
-        )
-      );
+      setReturnButtonText((prev) => {
+        const updatedText = { ...prev, [id]: "Returned" };
+        console.log("Updated returnButtonText:", updatedText);
+        return updatedText;
+      });
     } catch (err) {
-      console.error("Error adding fine:", err);
-      if (err.response?.status === 404) {
-        setActionError(`Member with ID ${memberId} not found on the server.`);
+      if (err.name === "AbortError") {
+        console.log("Request aborted");
       } else {
-        setActionError("Failed to add fine. Please try again.");
+        console.error("Error marking book as returned:", err.response?.data || err.message);
+        setActionError(
+          `Failed to mark book as returned: ${err.response?.data?.message || err.message}. Refreshing data...`
+        );
+        await refetchIssuedBooks();
       }
     } finally {
-      setActionLoading((prev) => ({ ...prev, [issueId]: { ...prev[issueId], fine: false } }));
+      setActionLoading((prev) => {
+        const updated = { ...prev, [id]: { ...prev[id], return: false } };
+        console.log("Updated actionLoading:", updated);
+        return updated;
+      });
     }
-  };
-
-  const indexOfLastBook = currentPage * booksPerPage;
-  const indexOfFirstBook = indexOfLastBook - booksPerPage;
-  const currentIssuedBooks = issuedBooks.slice(indexOfFirstBook, indexOfLastBook);
-  const totalPages = Math.ceil(issuedBooks.length / booksPerPage);
+  }, [issuedBooks, books, refetchIssuedBooks]);
 
   const paginate = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -200,32 +502,36 @@ const IssuedBooks = () => {
     }
   };
 
-  const getPageNumbers = () => {
-    const maxPagesToShow = 5;
-    const pages = [];
-    if (totalPages <= maxPagesToShow) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      pages.push(1);
-      let startPage = Math.max(2, currentPage - 2);
-      let endPage = Math.min(totalPages - 1, currentPage + 2);
-      if (startPage > 2) {
-        pages.push("...");
-      }
-      for (let i = startPage; i <= endPage; i++) {
-        pages.push(i);
-      }
-      if (endPage < totalPages - 1) {
-        pages.push("...");
-      }
-      if (totalPages > 1) {
-        pages.push(totalPages);
-      }
-    }
-    return pages;
-  };
+  // Statistics
+  const totalIssuedBooks = isLoading ? (
+    <span className="inline-flex space-x-1">
+      <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></span>
+      <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+      <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+    </span>
+  ) : (
+    issuedBooks.filter((book) => book.status === "issued").length
+  );
+
+  const returnedBooks = isLoading ? (
+    <span className="inline-flex space-x-1">
+      <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></span>
+      <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+      <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+    </span>
+  ) : (
+    issuedBooks.filter((book) => book.status === "returned").length
+  );
+
+  const dueTodayBooks = isLoading ? (
+    <span className="inline-flex space-x-1">
+      <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></span>
+      <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+      <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+    </span>
+  ) : (
+    issuedBooks.filter((book) => isDueToday(book.status, book.dueDate)).length
+  );
 
   return (
     <section className="flex min-h-screen">
@@ -236,61 +542,128 @@ const IssuedBooks = () => {
         <Navbar />
         <section className="flex-1 pt-0 lg:pt-[70px] m-0 lg:m-2.5 transition-all duration-500">
           <div
-            className={`h-[calc(100vh-70px-50px)] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-6 ${open ? "lg:ml-68 lg:w-[calc(100%-17rem)]" : "lg:ml-24 lg:w-[calc(100%-6rem)]"
-              }`}
+            className={`h-[calc(100vh-70px-50px)] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-6 ${open ? "lg:ml-68 lg:w-[calc(100%-17rem)]" : "lg:ml-24 lg:w-[calc(100%-6rem)]"}`}
           >
-            <p
-              className={`${lightTheme ? "text-white" : "text-gray-900"
-                } text-3xl pb-3 mt-5 pl-5 font-bold transition-all duration-500`}
-            >
-              Issued Books
-            </p>
-            {(error || actionError) && (
-              <div
-                className={`mx-5 mb-4 p-3 rounded-lg text-sm ${lightTheme ? "bg-red-900 text-red-300" : "bg-red-100 text-red-700"
-                  } flex justify-between items-center`}
+            <div className="flex justify-between items-center">
+              <p
+                className={`${lightTheme ? "text-white" : "text-gray-900"} text-3xl pb-3 mt-5 pl-5 font-bold transition-all duration-500`}
               >
-                <span>{error || actionError}</span>
-                <button
-                  onClick={() => {
-                    setError(null);
-                    setActionError(null);
-                  }}
-                  className="ml-2 text-red-600 hover:text-red-800 cursor-pointer"
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
-            <div className="min-h-full flex flex-col gap-5 p-3">
+                Issued Books
+              </p>
+            </div>
+            <div className="flex flex-col gap-5 p-3">
+              {/* Statistics Section */}
               <section
-                className={`w-full flex-1 ${lightTheme ? "bg-slate-900 text-white" : "bg-white text-gray-900"
-                  } rounded-2xl p-6 shadow-lg transition-all duration-300`}
+                className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6 rounded-2xl shadow-lg transition-colors justify-center ${lightTheme ? "bg-gray-900" : "bg-white"}`}
+              >
+                <div
+                  className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl shadow-sm hover:scale-102 shadow-blue-400 w-full max-w-md mx-auto ${lightTheme ? "bg-gray-800" : "bg-gray-100"}`}
+                >
+                  <BookOpen
+                    className={`w-10 h-10 ${lightTheme ? "text-blue-400" : "text-blue-600"}`}
+                  />
+                  <p
+                    className={`font-medium text-lg ${lightTheme ? "text-gray-200" : "text-gray-800"}`}
+                  >
+                    Total Issued Books
+                  </p>
+                  <p
+                    className={`text-3xl font-bold ${lightTheme ? "text-white" : "text-gray-900"}`}
+                  >
+                    {totalIssuedBooks}
+                  </p>
+                </div>
+                <div
+                  className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl shadow-sm hover:scale-102 shadow-blue-400 w-full max-w-md mx-auto ${lightTheme ? "bg-gray-800" : "bg-gray-100"}`}
+                >
+                  <CheckCircle
+                    className={`w-10 h-10 ${lightTheme ? "text-green-400" : "text-green-600"}`}
+                  />
+                  <p
+                    className={`font-medium text-lg ${lightTheme ? "text-gray-200" : "text-gray-800"}`}
+                  >
+                    Returned Books
+                  </p>
+                  <p
+                    className={`text-3xl font-bold ${lightTheme ? "text-white" : "text-gray-900"}`}
+                  >
+                    {returnedBooks}
+                  </p>
+                </div>
+                <div
+                  className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl shadow-sm hover:scale-102 shadow-blue-400 w-full max-w-md mx-auto ${lightTheme ? "bg-gray-800" : "bg-gray-100"}`}
+                >
+                  <Calendar
+                    className={`w-10 h-10 ${lightTheme ? "text-yellow-400" : "text-yellow-600"}`}
+                  />
+                  <p
+                    className={`font-medium text-lg ${lightTheme ? "text-gray-200" : "text-gray-800"}`}
+                  >
+                    Due Today
+                  </p>
+                  <p
+                    className={`text-3xl font-bold ${lightTheme ? "text-white" : "text-gray-900"}`}
+                  >
+                    {dueTodayBooks}
+                  </p>
+                </div>
+              </section>
+              {/* Filter and Sort Section */}
+              <section
+                className={`flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-5 rounded-2xl shadow-md ${lightTheme ? "bg-gray-900" : "bg-white"}`}
+              >
+                <div
+                  className={`flex items-center w-full md:max-w-lg px-4 py-2 border rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 ${lightTheme ? "bg-gray-800 border-gray-600" : "bg-gray-50 border-gray-200"}`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className={`h-5 w-5 mr-2 ${lightTheme ? "text-gray-300" : "text-gray-500"}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z"
+                    />
+                  </svg>
+                  <input
+                    className={`flex-1 bg-transparent outline-none text-sm md:text-base ${lightTheme ? "text-white placeholder-gray-400" : "text-gray-700 placeholder-gray-400"}`}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by title, member, or ID..."
+                  />
+                </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+                  <select
+                    className={`px-4 py-2 rounded-lg shadow-sm border text-sm cursor-pointer w-full sm:w-auto ${lightTheme ? "bg-gray-800 text-white border-gray-600" : "bg-white text-gray-700 border-gray-300"}`}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    value={sortBy}
+                  >
+                    <option value="">Sort By</option>
+                    <option value="issueDate">Issue Date</option>
+                    <option value="dueDate">Due Date</option>
+                    <option value="member">Member Name</option>
+                  </select>
+                </div>
+              </section>
+              {/* Issued Books List */}
+              <section
+                className={`w-full flex-1 ${lightTheme ? "bg-gray-900 text-white" : "bg-white text-gray-900"} rounded-2xl p-6 shadow-lg transition-all duration-300`}
               >
                 {isLoading ? (
-                  <div className="flex justify-center items-center min-h-[100vh] w-full">
+                  <div className="flex justify-center items-center min-h-[50vh] w-full col-span-full">
                     <span className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
                   </div>
-                ) : issuedBooks.length === 0 ? (
+                ) : filteredBooks.length === 0 ? (
                   <div
-                    className={`flex flex-col items-center justify-center min-h-[50vh] w-full rounded-xl ${lightTheme ? "bg-slate-800" : "bg-gray-50"
-                      }`}
+                    className={`flex flex-col items-center justify-center min-h-[50vh] w-full rounded-xl ${lightTheme ? "bg-gray-800" : "bg-gray-50"}`}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className={`w-16 h-16 ${lightTheme ? "text-gray-500" : "text-gray-400"}`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 006 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
-                      />
-                    </svg>
-                    <p className="mt-4 text-gray-500">No issued books available</p>
+                    <img src={issuedBookFallback} className="h-60 w-60" alt="No issue book found" />
+                    <p className="mt-4 text-gray-500">No issued books found</p>
                   </div>
                 ) : (
                   <>
@@ -299,36 +672,35 @@ const IssuedBooks = () => {
                         const book = getBook(issuedBook);
                         return (
                           <li
-                            key={issuedBook.issueId || i}
-                            className={`p-4 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center border transition-all duration-200 ${lightTheme
-                              ? "bg-slate-800 border-slate-700 hover:bg-slate-700"
-                              : "bg-gray-50 border-gray-200 hover:bg-gray-100"
-                              }`}
+                            key={issuedBook.id || i}
+                            className={`p-4 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center border transition-all duration-200 hover:scale-[1.01] ${lightTheme ? "bg-gray-800 border-gray-700 hover:bg-gray-700" : "bg-gray-50 border-gray-200 hover:bg-gray-100"}`}
                           >
                             <div className="flex flex-col md:flex-row gap-4">
-                              {book?.coverImage && (
+                              {book?.img && (
                                 <img
-                                  src={book.coverImage}
+                                  src={book.img}
                                   alt={book.title}
                                   className="w-16 h-24 object-cover rounded-lg shadow-md"
                                   onError={(e) => {
-                                    e.target.src = "/placeholder-book.jpg"; // Fallback image
+                                    e.target.src = "https://via.placeholder.com/100x150?text=Book+Cover";
                                   }}
+                                  loading="lazy"
                                 />
                               )}
                               <div className="flex flex-col gap-2">
                                 <div className="flex items-center gap-3">
-                                  <div
-                                    className={`w-10 h-10 flex items-center justify-center rounded-full font-bold text-sm ${lightTheme ? "bg-slate-700 text-blue-300" : "bg-indigo-100 text-indigo-600"
-                                      } transition-all duration-200`}
-                                  >
-                                    <span>{book?.title?.charAt(0).toUpperCase() || "B"}</span>
-                                  </div>
+                                  {!book.img && (
+                                    <div
+                                      className={`w-10 h-10 flex items-center justify-center rounded-full font-bold text-sm ${lightTheme ? "bg-gray-700 text-indigo-300" : "bg-indigo-100 text-indigo-600"} transition-all duration-200`}
+                                    >
+                                      <span>B</span>
+                                    </div>
+                                  )}
                                   <div>
-                                    <span className="font-medium text-base md:text-lg block truncate max-w-[200px] md:max-w-[300px]">
-                                      {book?.title || "Unknown Book"}
+                                    <span className="font-medium text-base md:text-lg block truncate max-w-[200px] sm:max-w-[300px] md:max-w-[400px]">
+                                      {book.title}
                                     </span>
-                                    <span className="text-xs text-gray-400">Issue ID: {issuedBook.issueId}</span>
+                                    <span className="text-xs text-gray-400">ID: {issuedBook.id}</span>
                                   </div>
                                 </div>
                                 <div className="text-sm text-gray-400 space-y-1">
@@ -337,7 +709,8 @@ const IssuedBooks = () => {
                                     {getMemberName(issuedBook.memberId)}
                                   </p>
                                   <p>
-                                    <span className="font-medium text-gray-500">Issued By:</span> {issuedBook.issuedBy}
+                                    <span className="font-medium text-gray-500">Issued By:</span>{" "}
+                                    {issuedBook.issuedBy || "N/A"}
                                   </p>
                                   <p>
                                     <span className="font-medium text-gray-500">Issue Date:</span>{" "}
@@ -355,47 +728,29 @@ const IssuedBooks = () => {
                                     <span className="font-medium text-gray-500">Renewals:</span>{" "}
                                     {issuedBook.renewals || 0}
                                   </p>
+                                  <p>
+                                    <span className="font-medium text-gray-500">Status:</span>{" "}
+                                    {issuedBook.status || "Unknown"}
+                                  </p>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 mt-2 md:mt-0">
+                            <div className="flex items-center gap-2 mt-2 md:mt-0 flex-wrap">
                               <span
-                                className={`px-3 w-24 text-center py-2 rounded-full text-xs font-semibold tracking-wide border capitalize ${getStatusStyles(
-                                  issuedBook.status,
-                                  issuedBook.dueDate
-                                )}`}
+                                className={`px-3 py-2 rounded-full text-xs font-semibold tracking-wide border capitalize ${getStatusStyles(issuedBook.status, issuedBook.dueDate)}`}
                               >
-                                {isOverdue(issuedBook.status, issuedBook.dueDate) ? "overdue" : issuedBook.status}
+                                {isOverdue(issuedBook.status, issuedBook.dueDate) ? "Overdue" : issuedBook.status || "Unknown"}
                               </span>
                               {issuedBook.status === "issued" && (
                                 <button
-                                  onClick={() => markAsReturned(issuedBook.issueId)}
-                                  disabled={actionLoading[issuedBook.issueId]?.return}
-                                  className={`px-3 py-1 rounded-lg text-sm ${lightTheme
-                                    ? "bg-green-600 text-white hover:bg-green-700 active:bg-green-800"
-                                    : "bg-green-500 text-white hover:bg-green-600 active:bg-green-700"
-                                    } disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 flex items-center justify-center min-w-[100px]`}
+                                  onClick={() => markAsReturned(issuedBook.id)}
+                                  disabled={actionLoading[issuedBook.id]?.return || issuedBook.status === "returned"}
+                                  className={`px-3 py-1 rounded-lg text-sm ${lightTheme ? "bg-green-600 text-white hover:bg-green-700 active:bg-green-800" : "bg-green-500 text-white hover:bg-green-600 active:bg-green-700"} disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 flex items-center justify-center min-w-[100px] transition-all duration-200 hover:scale-105`}
                                 >
-                                  {actionLoading[issuedBook.issueId]?.return ? (
+                                  {actionLoading[issuedBook.id]?.return ? (
                                     <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                                   ) : (
-                                    "Mark Returned"
-                                  )}
-                                </button>
-                              )}
-                              {isOverdue(issuedBook.status, issuedBook.dueDate) && (
-                                <button
-                                  onClick={() => addFine(issuedBook.memberId, issuedBook.issueId)}
-                                  disabled={actionLoading[issuedBook.issueId]?.fine}
-                                  className={`px-3 py-1 rounded-lg text-sm ${lightTheme
-                                    ? "bg-red-600 text-white hover:bg-red-700 active:bg-red-800"
-                                    : "bg-red-500 text-white hover:bg-red-600 active:bg-red-700"
-                                    } disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 flex items-center justify-center min-w-[100px]`}
-                                >
-                                  {actionLoading[issuedBook.issueId]?.fine ? (
-                                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                                  ) : (
-                                    "Add Fine"
+                                    returnButtonText[issuedBook.id] || "Mark Returned"
                                   )}
                                 </button>
                               )}
@@ -404,47 +759,25 @@ const IssuedBooks = () => {
                         );
                       })}
                     </ul>
-                    {issuedBooks.length > booksPerPage && (
+                    {filteredBooks.length > booksPerPage && (
                       <section
-                        className={`flex justify-center items-center gap-1 sm:gap-2 p-3 sm:p-4 transition-all ${lightTheme ? "bg-slate-900" : "bg-white"
-                          }`}
+                        className={`flex justify-center items-center gap-1 sm:gap-2 p-3 sm:p-4 transition-all ${lightTheme ? "bg-gray-900" : "bg-white"}`}
                       >
                         <button
                           onClick={() => paginate(currentPage - 1)}
                           disabled={currentPage === 1}
-                          className={`p-2 rounded-full ${lightTheme
-                            ? currentPage === 1
-                              ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                              : "bg-gray-600 text-white hover:bg-gray-700"
-                            : currentPage === 1
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-gray-300 text-gray-800 hover:bg-gray-400"
-                            } transition-all duration-200 transform hover:scale-105 disabled:transform-none`}
+                          className={`p-2 rounded-full ${lightTheme ? currentPage === 1 ? "bg-gray-700 text-gray-400 cursor-not-allowed" : "bg-gray-600 text-white hover:bg-gray-700" : currentPage === 1 ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-gray-300 text-gray-800 hover:bg-gray-400"} transition-all duration-200 transform hover:scale-105 disabled:transform-none`}
                           aria-label="Previous page"
                         >
                           <ChevronLeft className="w-5 h-5" />
                         </button>
-                        {getPageNumbers().map((page, index) => (
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                           <button
-                            key={index}
-                            onClick={() => typeof page === "number" && paginate(page)}
-                            className={`px-3 py-1 rounded-lg text-sm sm:text-base ${lightTheme
-                              ? currentPage === page
-                                ? "bg-indigo-600 text-white"
-                                : typeof page === "number"
-                                  ? "bg-gray-600 text-white hover:bg-gray-700"
-                                  : "bg-slate-900 text-gray-400 cursor-default"
-                              : currentPage === page
-                                ? "bg-indigo-500 text-white"
-                                : typeof page === "number"
-                                  ? "bg-gray-300 text-gray-800 hover:bg-gray-400"
-                                  : "bg-white text-gray-400 cursor-default"
-                              } transition-all duration-200 transform hover:scale-105 disabled:transform-none`}
-                            disabled={typeof page !== "number"}
+                            key={page}
+                            onClick={() => paginate(page)}
+                            className={`px-3 py-1 rounded-lg text-sm sm:text-base ${lightTheme ? currentPage === page ? "bg-indigo-600 text-white" : "bg-gray-600 text-white hover:bg-gray-700" : currentPage === page ? "bg-indigo-500 text-white" : "bg-gray-300 text-gray-800 hover:bg-gray-400"} transition-all duration-200 transform hover:scale-105`}
                             aria-current={currentPage === page ? "page" : undefined}
-                            aria-label={
-                              typeof page === "number" ? `Page ${page}` : "Pagination ellipsis"
-                            }
+                            aria-label={`Page ${page}`}
                           >
                             {page}
                           </button>
@@ -452,14 +785,7 @@ const IssuedBooks = () => {
                         <button
                           onClick={() => paginate(currentPage + 1)}
                           disabled={currentPage === totalPages}
-                          className={`p-2 rounded-full ${lightTheme
-                            ? currentPage === totalPages
-                              ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                              : "bg-gray-600 text-white hover:bg-gray-700"
-                            : currentPage === totalPages
-                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                              : "bg-gray-300 text-gray-800 hover:bg-gray-400"
-                            } transition-all duration-200 transform hover:scale-105 disabled:transform-none`}
+                          className={`p-2 rounded-full ${lightTheme ? currentPage === totalPages ? "bg-gray-700 text-gray-400 cursor-not-allowed" : "bg-gray-600 text-white hover:bg-gray-700" : currentPage === totalPages ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-gray-300 text-gray-800 hover:bg-gray-400"} transition-all duration-200 transform hover:scale-105 disabled:transform-none`}
                           aria-label="Next page"
                         >
                           <ChevronRight className="w-5 h-5" />
@@ -476,6 +802,11 @@ const IssuedBooks = () => {
       </div>
     </section>
   );
+};
+
+IssuedBooks.propTypes = {
+  lightTheme: PropTypes.bool,
+  open: PropTypes.bool,
 };
 
 export default IssuedBooks;
