@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect, useMemo } from "react";
 import PropTypes from "prop-types";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
@@ -76,8 +76,35 @@ const BookFormModal = ({
   const [localError, setLocalError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Validate props and handle invalid selectedBook
   useEffect(() => {
-    if (showModal && modalType !== "add" && selectedBook) {
+    if (!showModal) {
+      document.title = "Smart Shelf";
+      setLocalError(null);
+      dispatch(clearError());
+      return;
+    }
+
+    // Handle document title
+    document.title = "Books | Smart Shelf";
+
+    // Validate modalType
+    if (!["add", "edit", "view"].includes(modalType)) {
+      console.error("Invalid modalType:", modalType);
+      setError("Invalid modal type. Please try again.");
+      setShowModal(false);
+      return;
+    }
+
+    // Handle form data initialization
+    if (modalType !== "add" && (!selectedBook || !selectedBook.id || typeof selectedBook !== "object")) {
+      console.error("Invalid selectedBook:", selectedBook);
+      setError("Invalid book data. Please try again.");
+      setShowModal(false);
+      return;
+    }
+
+    if (modalType !== "add" && selectedBook) {
       setFormData({
         title: selectedBook.title || "",
         author: selectedBook.author || "",
@@ -98,7 +125,7 @@ const BookFormModal = ({
           ? [...selectedBook.copies]
           : [],
       });
-    } else if (showModal && modalType === "add") {
+    } else if (modalType === "add") {
       setFormData({
         title: "",
         author: "",
@@ -122,9 +149,17 @@ const BookFormModal = ({
         addedOn: new Date().toISOString(),
       });
     }
+
     setLocalError(null);
     dispatch(clearError());
-  }, [showModal, modalType, selectedBook, dispatch]);
+
+    return () => {
+      console.log("Combined useEffect cleanup");
+      document.title = "Smart Shelf";
+    };
+  }, [showModal, modalType, selectedBook, dispatch, setError, setShowModal]);
+
+  if (!showModal) return null;
 
   const handleAddCopy = () => {
     if (!newCopy.id || !newCopy.isbn) {
@@ -197,6 +232,7 @@ const BookFormModal = ({
 
   const handleSubmit = async (e, retries = 3) => {
     e.preventDefault();
+    let isMounted = true;
     setLocalError(null);
     setIsSubmitting(true);
     try {
@@ -235,16 +271,18 @@ const BookFormModal = ({
       };
       if (modalType === "edit") {
         await dispatch(
-          updateBook({ id: selectedBook.id, updatedBook: data })
+          updateBook({ id: String(selectedBook.id), updatedBook: data })
         ).unwrap();
       } else if (modalType === "add") {
         await dispatch(addBook(data)).unwrap();
       }
       await dispatch(fetchBooks()).unwrap();
-      setShowModal(false);
+      if (isMounted) {
+        setShowModal(false);
+      }
     } catch (err) {
       console.error("Submit error:", err);
-      if (err.status >= 500 && retries > 0) {
+      if (err.status >= 500 && retries > 0 && isMounted) {
         console.warn(`Server error (${err.status}). Retrying... (${retries} attempts left)`);
         await new Promise((resolve) => setTimeout(resolve, 1000));
         return handleSubmit(e, retries - 1);
@@ -253,28 +291,26 @@ const BookFormModal = ({
         typeof err === "string"
           ? err
           : err.message || "Failed to save book. Please check your input and try again.";
-      setLocalError(errorMessage);
-      setError(errorMessage);
+      if (isMounted) {
+        setLocalError(errorMessage);
+        setError(errorMessage);
+      }
     } finally {
-      setIsSubmitting(false);
+      if (isMounted) {
+        setIsSubmitting(false);
+      }
     }
-  };
-
-  if (!showModal) return null;
-
-  useEffect(() => {
-    document.title = "Books | Smart Shelf";
     return () => {
-      document.title = "Smart Shelf";
+      isMounted = false;
     };
-  }, []);
+  };
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 transition-opacity p-4 sm:p-5">
       <div
         className={`relative p-4 sm:p-6 rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg max-h-[80vh] overflow-y-auto scrollbar-thin transform transition-all scale-100 hover:scale-102 ${lightTheme
-          ? "bg-gray-800 text-white border border-gray-700"
-          : "bg-white text-black border border-gray-200"
+            ? "bg-gray-800 text-white border border-gray-700"
+            : "bg-white text-black border border-gray-200"
           }`}
       >
         <div className="flex items-center justify-between mb-4">
@@ -438,9 +474,7 @@ const BookFormModal = ({
                 className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
                   }`}
               >
-                {selectedBook?.popularity
-                  ? `${selectedBook.popularity}/5`
-                  : "N/A"}
+                {selectedBook?.popularity ? `${selectedBook.popularity}/5` : "N/A"}
               </p>
             </div>
             <div>
@@ -456,8 +490,8 @@ const BookFormModal = ({
                     {selectedBook.copies.map((copy, index) => (
                       <li key={copy.id || `copy-${index}`} className="text-sm">
                         Copy ID: {copy.id || "N/A"}, ISBN: {copy.isbn || "N/A"},
-                        Availability: {copy.availability || "N/A"}, Edition:{" "}
-                        {copy.edition || "N/A"}, Condition: {copy.condition || "N/A"}
+                        Availability: {copy.availability || "N/A"}, Edition: {copy.edition || "N/A"},
+                        Condition: {copy.condition || "N/A"}
                       </li>
                     ))}
                   </ul>
@@ -471,8 +505,8 @@ const BookFormModal = ({
                 type="button"
                 onClick={() => setShowModal(false)}
                 className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base ${lightTheme
-                  ? "bg-gray-600 text-white hover:bg-gray-700"
-                  : "bg-gray-300 text-gray-800 hover:bg-gray-400"
+                    ? "bg-gray-600 text-white hover:bg-gray-700"
+                    : "bg-gray-300 text-gray-800 hover:bg-gray-400"
                   }`}
               >
                 Close
@@ -491,8 +525,8 @@ const BookFormModal = ({
                 value={formData.title}
                 onChange={handleChange}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-white text-black border-gray-300"
                   }`}
                 required
                 disabled={isSubmitting}
@@ -508,8 +542,8 @@ const BookFormModal = ({
                 value={formData.author}
                 onChange={handleChange}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-white text-black border-gray-300"
                   }`}
                 required
                 disabled={isSubmitting}
@@ -525,8 +559,8 @@ const BookFormModal = ({
                 value={formData.genre}
                 onChange={handleChange}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-white text-black border-gray-300"
                   }`}
                 disabled={isSubmitting}
               />
@@ -541,8 +575,8 @@ const BookFormModal = ({
                 value={formData.publisher}
                 onChange={handleChange}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-white text-black border-gray-300"
                   }`}
                 disabled={isSubmitting}
               />
@@ -557,8 +591,8 @@ const BookFormModal = ({
                 value={formData.language}
                 onChange={handleChange}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-white text-black border-gray-300"
                   }`}
                 disabled={isSubmitting}
               />
@@ -573,8 +607,8 @@ const BookFormModal = ({
                 value={formData.year}
                 onChange={handleChange}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-white text-black border-gray-300"
                   }`}
                 disabled={isSubmitting}
               />
@@ -589,8 +623,8 @@ const BookFormModal = ({
                 value={formData.pages}
                 onChange={handleChange}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-white text-black border-gray-300"
                   }`}
                 disabled={isSubmitting}
               />
@@ -604,8 +638,8 @@ const BookFormModal = ({
                 value={formData.description}
                 onChange={handleChange}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-white text-black border-gray-300"
                   }`}
                 rows="4"
                 disabled={isSubmitting}
@@ -621,8 +655,8 @@ const BookFormModal = ({
                 value={formData.price}
                 onChange={handleChange}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-white text-black border-gray-300"
                   }`}
                 disabled={isSubmitting}
               />
@@ -637,8 +671,8 @@ const BookFormModal = ({
                 value={formData.img}
                 onChange={handleChange}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-white text-black border-gray-300"
                   }`}
                 disabled={isSubmitting}
               />
@@ -653,8 +687,8 @@ const BookFormModal = ({
                 value={formData.popularity}
                 onChange={handleChange}
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-white text-black border-gray-300"
                   }`}
                 step="0.01"
                 disabled={isSubmitting}
@@ -677,8 +711,8 @@ const BookFormModal = ({
                       >
                         <span>
                           Copy ID: {copy.id || "N/A"}, ISBN: {copy.isbn || "N/A"},
-                          Availability: {copy.availability || "N/A"}, Edition:{" "}
-                          {copy.edition || "N/A"}, Condition: {copy.condition || "N/A"}
+                          Availability: {copy.availability || "N/A"}, Edition: {copy.edition || "N/A"},
+                          Condition: {copy.condition || "N/A"}
                         </span>
                         <button
                           type="button"
@@ -707,8 +741,8 @@ const BookFormModal = ({
                     value={newCopy.id}
                     onChange={handleCopyChange}
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-white text-black border-gray-300"
                       }`}
                     disabled={isSubmitting}
                   />
@@ -723,8 +757,8 @@ const BookFormModal = ({
                     value={newCopy.isbn}
                     onChange={handleCopyChange}
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-white text-black border-gray-300"
                       }`}
                     disabled={isSubmitting}
                   />
@@ -738,8 +772,8 @@ const BookFormModal = ({
                     value={newCopy.availability}
                     onChange={handleCopyChange}
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-white text-black border-gray-300"
                       }`}
                     disabled={isSubmitting}
                   >
@@ -758,8 +792,8 @@ const BookFormModal = ({
                     value={newCopy.edition}
                     onChange={handleCopyChange}
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-white text-black border-gray-300"
                       }`}
                     disabled={isSubmitting}
                   />
@@ -773,8 +807,8 @@ const BookFormModal = ({
                     value={newCopy.condition}
                     onChange={handleCopyChange}
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-black border-gray-300"
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-white text-black border-gray-300"
                       }`}
                     disabled={isSubmitting}
                   >
@@ -787,8 +821,8 @@ const BookFormModal = ({
                   type="button"
                   onClick={handleAddCopy}
                   className={`mt-2 px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base ${lightTheme
-                    ? "bg-green-600 text-white hover:bg-green-700"
-                    : "bg-green-500 text-white hover:bg-green-600"
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : "bg-green-500 text-white hover:bg-green-600"
                     } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                   disabled={isSubmitting}
                 >
@@ -801,8 +835,8 @@ const BookFormModal = ({
                 type="button"
                 onClick={() => setShowModal(false)}
                 className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base ${lightTheme
-                  ? "bg-gray-600 text-white hover:bg-gray-700"
-                  : "bg-gray-300 text-gray-800 hover:bg-gray-400"
+                    ? "bg-gray-600 text-white hover:bg-gray-700"
+                    : "bg-gray-300 text-gray-800 hover:bg-gray-400"
                   } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                 disabled={isSubmitting}
               >
@@ -812,8 +846,8 @@ const BookFormModal = ({
                 type="button"
                 onClick={handleSubmit}
                 className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base flex items-center gap-2 ${lightTheme
-                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                  : "bg-indigo-500 text-white hover:bg-indigo-600"
+                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    : "bg-indigo-500 text-white hover:bg-indigo-600"
                   } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                 disabled={isSubmitting}
               >
@@ -835,7 +869,7 @@ BookFormModal.propTypes = {
   setShowModal: PropTypes.func.isRequired,
   modalType: PropTypes.oneOf(["add", "edit", "view"]).isRequired,
   selectedBook: PropTypes.shape({
-    id: PropTypes.string,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     title: PropTypes.string,
     author: PropTypes.string,
     genre: PropTypes.oneOfType([
@@ -879,6 +913,23 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
   const [localError, setLocalError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Validate props and handle invalid selectedBook
+  useEffect(() => {
+    if (!showModal) {
+      setLocalError(null);
+      dispatch(clearError());
+      return;
+    }
+
+    if (!selectedBook || !selectedBook.id || typeof selectedBook !== "object") {
+      console.error("Invalid selectedBook in IssueBookModal:", selectedBook);
+      setError("Invalid book data. Please try again.");
+      setShowModal(false);
+    }
+  }, [showModal, selectedBook, dispatch, setError, setShowModal]);
+
+  if (!showModal) return null;
+
   const handleChange = (e) => {
     setIssueData({ ...issueData, [e.target.name]: e.target.value });
     setLocalError(null);
@@ -891,6 +942,7 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
 
   const handleSubmit = async (e, retries = 3) => {
     e.preventDefault();
+    let isMounted = true;
     setLocalError(null);
     setIsSubmitting(true);
     try {
@@ -903,9 +955,6 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
       if (!debouncedIssueData.issuedBy.trim()) {
         throw new Error("Issued By is required.");
       }
-      if (!selectedBook?.id) {
-        throw new Error("Invalid book ID.");
-      }
       const issuePayload = {
         copyId: debouncedIssueData.copyId,
         memberId: debouncedIssueData.memberId,
@@ -917,24 +966,26 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
       };
       await dispatch(
         issueBook({
-          bookId: selectedBook.id,
+          bookId: String(selectedBook.id),
           copyId: debouncedIssueData.copyId,
           issueData: issuePayload,
         })
       ).unwrap();
       await dispatch(fetchBooks()).unwrap();
       await dispatch(fetchIssuedBooks()).unwrap();
-      setShowModal(false);
-      setIssueData({
-        copyId: "",
-        memberId: "",
-        issuedBy: "",
-        issueDate: new Date(),
-        dueDate: new Date(new Date().setDate(new Date().getDate() + 14)),
-      });
+      if (isMounted) {
+        setShowModal(false);
+        setIssueData({
+          copyId: "",
+          memberId: "",
+          issuedBy: "",
+          issueDate: new Date(),
+          dueDate: new Date(new Date().setDate(new Date().getDate() + 14)),
+        });
+      }
     } catch (err) {
       console.error("Issue book error:", err);
-      if (err.status >= 500 && retries > 0) {
+      if (err.status >= 500 && retries > 0 && isMounted) {
         console.warn(`Server error (${err.status}). Retrying... (${retries} attempts left)`);
         await new Promise((resolve) => setTimeout(resolve, 1000));
         return handleSubmit(e, retries - 1);
@@ -943,14 +994,19 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
         typeof err === "string"
           ? err
           : err.message || "Failed to issue book. Please try again.";
-      setLocalError(errorMessage);
-      setError(errorMessage);
+      if (isMounted) {
+        setLocalError(errorMessage);
+        setError(errorMessage);
+      }
     } finally {
-      setIsSubmitting(false);
+      if (isMounted) {
+        setIsSubmitting(false);
+      }
     }
+    return () => {
+      isMounted = false;
+    };
   };
-
-  if (!showModal) return null;
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -1059,8 +1115,8 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
               type="button"
               onClick={() => setShowModal(false)}
               className={`px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 ${lightTheme
-                ? "bg-gray-600 text-white hover:bg-gray-700"
-                : "bg-gray-300 text-gray-800 hover:bg-gray-400"
+                  ? "bg-gray-600 text-white hover:bg-gray-700"
+                  : "bg-gray-300 text-gray-800 hover:bg-gray-400"
                 } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
               disabled={isSubmitting}
             >
@@ -1070,8 +1126,8 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
               type="button"
               onClick={handleSubmit}
               className={`px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 flex items-center gap-2 ${lightTheme
-                ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                : "bg-indigo-500 text-white hover:bg-indigo-600"
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                  : "bg-indigo-500 text-white hover:bg-indigo-600"
                 } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
               disabled={isSubmitting}
             >
@@ -1091,7 +1147,7 @@ IssueBookModal.propTypes = {
   showModal: PropTypes.bool.isRequired,
   setShowModal: PropTypes.func.isRequired,
   selectedBook: PropTypes.shape({
-    id: PropTypes.string,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     title: PropTypes.string,
     copies: PropTypes.arrayOf(
       PropTypes.shape({
@@ -1115,7 +1171,7 @@ const BookManagement = () => {
   const [booksPerPage] = useState(8);
   const [showModal, setShowModal] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
-  const [modalType, setModalType] = useState("");
+  const [modalType, setModalType] = useState(null); // Initialize as null to indicate no modal
   const [selectedBook, setSelectedBook] = useState(null);
   const [error, setError] = useState(null);
   const debouncedTitle = useDebounce(title, 300);
@@ -1130,11 +1186,39 @@ const BookManagement = () => {
     error: reduxError,
   } = useSelector((state) => state.books);
 
+  // Memoize selectedBook to prevent unnecessary re-renders
+  const memoizedSelectedBook = useMemo(() => selectedBook, [selectedBook]);
+
   useEffect(() => {
-    dispatch(fetchBooks()).unwrap()
-      .catch((err) => setError(err.message || "Failed to fetch books."));
-    dispatch(fetchIssuedBooks()).unwrap()
-      .catch((err) => setError(err.message || "Failed to fetch issued books."));
+    const fetchData = async () => {
+      try {
+        const fetchedBooks = await dispatch(fetchBooks()).unwrap();
+        console.log("Fetched books:", fetchedBooks);
+        // Normalize book IDs to strings
+        const normalizedBooks = fetchedBooks.map((book) => ({
+          ...book,
+          id: String(book.id),
+        }));
+        // Validate books
+        const invalidBooks = normalizedBooks.filter(
+          (book) => !book || !book.id || typeof book !== "object"
+        );
+        if (invalidBooks.length > 0) {
+          console.warn("Invalid books detected:", invalidBooks);
+          setError("Invalid book data detected in the library. Please refresh or contact support.");
+        }
+      } catch (err) {
+        console.error("Fetch books error:", err);
+        setError(err.message || "Failed to fetch books.");
+      }
+      try {
+        await dispatch(fetchIssuedBooks()).unwrap();
+      } catch (err) {
+        console.error("Fetch issued books error:", err);
+        setError(err.message || "Failed to fetch issued books.");
+      }
+    };
+    fetchData();
   }, [dispatch]);
 
   useEffect(() => {
@@ -1271,12 +1355,12 @@ const BookManagement = () => {
   };
 
   const handleEditBook = (book) => {
-    if (!book?.id) {
+    if (!book?.id || typeof book !== "object") {
       console.error("Invalid book selected for edit:", book);
       setError("Cannot edit book: Invalid or missing book ID.");
       return;
     }
-    setSelectedBook(book);
+    setSelectedBook({ ...book, id: String(book.id) });
     setModalType("edit");
     setShowModal(true);
     setError(null);
@@ -1284,12 +1368,13 @@ const BookManagement = () => {
   };
 
   const handleViewBook = (book) => {
-    if (!book) {
+    console.log("handleViewBook called with book:", book);
+    if (!book || !book.id || typeof book !== "object") {
       console.error("Invalid book selected for view:", book);
-      setError("Cannot view book: Invalid book data.");
+      setError("Cannot view book: Invalid or missing book data.");
       return;
     }
-    setSelectedBook(book);
+    setSelectedBook({ ...book, id: String(book.id) });
     setModalType("view");
     setShowModal(true);
     setError(null);
@@ -1306,13 +1391,16 @@ const BookManagement = () => {
     const originalIssuedBooks = [...issuedBooks];
     setError(null);
     try {
-      await dispatch(deleteBook(id)).unwrap();
+      await dispatch(deleteBook(String(id))).unwrap();
       await dispatch(fetchBooks()).unwrap();
     } catch (err) {
       console.error("Delete book error:", err);
       setError("Failed to delete book. It may have been deleted already. Refreshing...");
-      dispatch(fetchBooks()).unwrap()
-        .catch(() => setError("Failed to refresh books."));
+      try {
+        await dispatch(fetchBooks()).unwrap();
+      } catch (refreshErr) {
+        setError("Failed to refresh books.");
+      }
     }
   };
 
@@ -1328,7 +1416,7 @@ const BookManagement = () => {
       setError("Cannot issue book: No available copies or invalid book data.");
       return;
     }
-    setSelectedBook(book);
+    setSelectedBook({ ...book, id: String(book.id) });
     setShowIssueModal(true);
     setError(null);
     dispatch(clearError());
@@ -1344,8 +1432,8 @@ const BookManagement = () => {
         <section className="flex-1 pt-0 lg:pt-[70px] m-0 lg:m-2.5 transition-all duration-500 ease-in-out">
           <div
             className={`overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-6 ${open
-              ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
-              : "lg:ml-24 lg:w-[calc(100%-6rem)]"
+                ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
+                : "lg:ml-24 lg:w-[calc(100%-6rem)]"
               }`}
             style={{ height: "calc(100vh - 70px - 50px)" }}
           >
@@ -1486,8 +1574,8 @@ const BookManagement = () => {
                   </svg>
                   <input
                     className={`flex-1 bg-transparent outline-none text-sm md:text-base ${lightTheme
-                      ? "text-white placeholder-gray-400"
-                      : "text-gray-700 placeholder-gray-400"
+                        ? "text-white placeholder-gray-400"
+                        : "text-gray-700 placeholder-gray-400"
                       }`}
                     type="text"
                     value={title}
@@ -1498,8 +1586,8 @@ const BookManagement = () => {
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
                   <select
                     className={`px-4 py-2 rounded-lg shadow-sm border text-sm cursor-pointer w-full sm:w-auto ${lightTheme
-                      ? "bg-gray-800 text-white border-gray-600"
-                      : "bg-white text-gray-700 border-gray-300"
+                        ? "bg-gray-800 text-white border-gray-600"
+                        : "bg-white text-gray-700 border-gray-300"
                       }`}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
@@ -1510,8 +1598,8 @@ const BookManagement = () => {
                   </select>
                   <select
                     className={`px-4 py-2 rounded-lg shadow-sm border text-sm cursor-pointer w-full sm:w-auto ${lightTheme
-                      ? "bg-gray-800 text-white border-gray-600"
-                      : "bg-white text-gray-700 border-gray-300"
+                        ? "bg-gray-800 text-white border-gray-600"
+                        : "bg-white text-gray-700 border-gray-300"
                       }`}
                     onChange={(e) => setFilterBy(e.target.value)}
                   >
@@ -1528,8 +1616,8 @@ const BookManagement = () => {
                   <button
                     onClick={handleAddBook}
                     className={`flex items-center justify-center gap-2 rounded-md shadow-md cursor-pointer ${lightTheme
-                      ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                      : "bg-indigo-500 hover:bg-indigo-600 text-white"
+                        ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                        : "bg-indigo-500 hover:bg-indigo-600 text-white"
                       }`}
                   >
                     <span className="flex md:hidden w-10 h-10 rounded-full items-center justify-center">
@@ -1579,7 +1667,7 @@ const BookManagement = () => {
                 ) : currentBooks.length > 0 ? (
                   currentBooks.map((book) => (
                     <BookCard
-                      key={book.id}
+                      key={String(book.id)}
                       book={book}
                       lightTheme={lightTheme}
                       onEdit={() => handleEditBook(book)}
@@ -1615,8 +1703,8 @@ const BookManagement = () => {
                     disabled={currentPage === 1}
                     onClick={() => paginate(currentPage - 1)}
                     className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all cursor-pointer ${lightTheme
-                      ? "bg-gray-800 text-white hover:bg-gray-700"
-                      : "bg-gray-100 text-black hover:bg-gray-200"
+                        ? "bg-gray-800 text-white hover:bg-gray-700"
+                        : "bg-gray-100 text-black hover:bg-gray-200"
                       }`}
                     aria-label="Previous page"
                   >
@@ -1627,12 +1715,12 @@ const BookManagement = () => {
                       key={i}
                       onClick={() => paginate(i + 1)}
                       className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all cursor-pointer ${currentPage === i + 1
-                        ? lightTheme
-                          ? "bg-blue-600 text-white"
-                          : "bg-blue-200 text-blue-900"
-                        : lightTheme
-                          ? "bg-gray-800 text-white hover:bg-gray-700"
-                          : "bg-gray-100 text-black hover:bg-gray-200"
+                          ? lightTheme
+                            ? "bg-blue-600 text-white"
+                            : "bg-blue-200 text-blue-900"
+                          : lightTheme
+                            ? "bg-gray-800 text-white hover:bg-gray-700"
+                            : "bg-gray-100 text-black hover:bg-gray-200"
                         }`}
                       aria-label={`Page ${i + 1}`}
                       aria-current={currentPage === i + 1 ? "page" : undefined}
@@ -1644,8 +1732,8 @@ const BookManagement = () => {
                     disabled={currentPage === totalPages}
                     onClick={() => paginate(currentPage + 1)}
                     className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all cursor-pointer ${lightTheme
-                      ? "bg-gray-800 text-white hover:bg-gray-700"
-                      : "bg-gray-100 text-black hover:bg-gray-200"
+                        ? "bg-gray-800 text-white hover:bg-gray-700"
+                        : "bg-gray-100 text-black hover:bg-gray-200"
                       }`}
                     aria-label="Next page"
                   >
@@ -1658,23 +1746,27 @@ const BookManagement = () => {
           </div>
         </section>
       </div>
-      <BookFormModal
-        showModal={showModal}
-        setShowModal={setShowModal}
-        modalType={modalType}
-        selectedBook={selectedBook}
-        lightTheme={lightTheme}
-        dispatch={dispatch}
-        setError={setError}
-      />
-      <IssueBookModal
-        showModal={showIssueModal}
-        setShowModal={setShowIssueModal}
-        selectedBook={selectedBook}
-        lightTheme={lightTheme}
-        dispatch={dispatch}
-        setError={setError}
-      />
+      {showModal && modalType && (
+        <BookFormModal
+          showModal={showModal}
+          setShowModal={setShowModal}
+          modalType={modalType}
+          selectedBook={memoizedSelectedBook}
+          lightTheme={lightTheme}
+          dispatch={dispatch}
+          setError={setError}
+        />
+      )}
+      {showIssueModal && selectedBook && (
+        <IssueBookModal
+          showModal={showIssueModal}
+          setShowModal={setShowIssueModal}
+          selectedBook={memoizedSelectedBook}
+          lightTheme={lightTheme}
+          dispatch={dispatch}
+          setError={setError}
+        />
+      )}
     </section>
   );
 };
