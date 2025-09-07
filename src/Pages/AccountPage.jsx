@@ -19,11 +19,13 @@ const AccountPage = () => {
   const [profileImage, setProfileImage] = useState(null);
   const [imageError, setImageError] = useState(false);
 
-  // Title
   useEffect(() => {
-    document.title = "Account | Smart Shelf"
-  }, [])
- 
+    document.title = "Account | Smart Shelf";
+    return () => {
+      document.title = "Smart Shelf";
+    };
+  }, []);
+
   // Load initial data from localStorage
   useEffect(() => {
     const storedData = JSON.parse(localStorage.getItem("SS-AC")) || {};

@@ -27,11 +27,6 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-// Title
-useEffect(() => {
-  document.title = "Books | Smart Shelf"
-}, [])
-
 // Debouncing Function
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -266,6 +261,13 @@ const BookFormModal = ({
   };
 
   if (!showModal) return null;
+
+  useEffect(() => {
+    document.title = "Books | Smart Shelf";
+    return () => {
+      document.title = "Smart Shelf";
+    };
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 transition-opacity p-4 sm:p-5">

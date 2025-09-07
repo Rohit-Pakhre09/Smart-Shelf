@@ -11,8 +11,11 @@ const FinesPage = () => {
 
   // Title
   useEffect(() => {
-    document.title = "Fines | Smart Shelf"
-  }, [])
+    document.title = "Fines | Smart Shelf";
+    return () => {
+      document.title = "Smart Shelf";
+    };
+  }, []);
 
   const { lightTheme, open } = useContext(AppContext);
   const dispatch = useDispatch();

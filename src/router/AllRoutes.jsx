@@ -1,14 +1,14 @@
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import LoginPage from '../Pages/LoginPage';
-import SignUpPage from '../Pages/SignupPage';
-import Dashboard from '../Pages/DashBoard';
-import BookManagement from '../Pages/BookManagement';
-import MemberManagement from '../Pages/MemberManagement';
-import IssuedBooks from '../Pages/IssuedBooks';
-import FinePage from '../Pages/FinesPage';
+import LoginPage from '../pages/LoginPage.jsx';
+import SignUpPage from '../pages/SignupPage.jsx';
+import Dashboard from '../pages/DashBoard.jsx';
+import BookManagement from '../pages/BookManagement.jsx';
+import MemberManagement from '../pages/MemberManagement.jsx';
+import IssuedBooks from '../pages/IssuedBooks.jsx';
+import FinePage from '../pages/FinesPage.jsx';
 import ErrorPage from '../pages/ErrorPage.jsx'; // Updated to correct folder name and extension
-import AccountPage from '../Pages/AccountPage';
+import AccountPage from '../pages/AccountPage.jsx';
 import PrivateRoute from '../router/PrivateRoute';
 
 const paths = [

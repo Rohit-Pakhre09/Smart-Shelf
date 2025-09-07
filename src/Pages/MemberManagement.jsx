@@ -45,10 +45,12 @@ const MemberManagement = () => {
   // Url
   const membersUrl = "https://smart-shelf-server-qm2u.onrender.com/members";
 
-  // Title
   useEffect(() => {
-    document.title = "Members | Smart Shelf"
-  }, [])
+    document.title = "Members | Smart Shelf";
+    return () => {
+      document.title = "Smart Shelf";
+    };
+  }, []);
 
   // Fetch members using Redux thunk
   useEffect(() => {

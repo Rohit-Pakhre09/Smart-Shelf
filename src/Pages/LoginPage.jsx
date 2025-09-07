@@ -2,10 +2,12 @@ import LoginForm from '../components/LoginForm';
 
 function LoginPage() {
 
-  // Title
   useEffect(() => {
-    document.title = "Log-in Page"
-  }, [])
+      document.title = "Login | Smart Shelf";
+      return () => {
+        document.title = "Smart Shelf";
+      };
+    }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-200 p-4 sm:p-6 lg:p-8">

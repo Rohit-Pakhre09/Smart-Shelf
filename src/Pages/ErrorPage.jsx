@@ -7,8 +7,11 @@ const ErrorPage = () => {
 
   // Title
   useEffect(() => {
-    document.title = "404 Error"
-  }, [])
+      document.title = "404 Error";
+      return () => {
+        document.title = "Smart Shelf";
+      };
+    }, []);
   
   const { lightTheme } = useContext(AppContext);
   return (

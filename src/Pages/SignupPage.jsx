@@ -2,10 +2,12 @@ import SignUpForm from '../components/SignupForm';
 
 function SignUpPage() {
 
-    // Title
     useEffect(() => {
-        document.title = "Sign-up Page"
-    }, [])
+        document.title = "Signup | Smart Shelf";
+        return () => {
+          document.title = "Smart Shelf";
+        };
+      }, []);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-200 p-4 sm:p-6 lg:p-8">

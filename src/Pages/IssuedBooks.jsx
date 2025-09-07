@@ -47,10 +47,12 @@ const IssuedBooks = () => {
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const debouncedSortBy = useDebounce(sortBy, 300);
 
-  // Title
   useEffect(() => {
-    document.title = "Issued Books | Smart Shelf"
-  }, [])
+    document.title = "Issued Books | Smart Shelf";
+    return () => {
+      document.title = "Smart Shelf";
+    };
+  }, []);
 
   // Normalize issuedBooks data
   const normalizeIssuedBooks = (data) => {
