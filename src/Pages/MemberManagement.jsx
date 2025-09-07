@@ -277,7 +277,6 @@ const MemberManagement = () => {
         const payload = { ...formData };
         if (modalType === "add") {
           delete payload.id; // Ensure id is not sent
-          console.log("Sending request with payload:", JSON.stringify(payload, null, 2));
           await dispatch(addMembers(payload)).unwrap();
           dispatch(fetchMembers()).unwrap()
             .then((data) => setMembers(Array.isArray(data) ? data : []));

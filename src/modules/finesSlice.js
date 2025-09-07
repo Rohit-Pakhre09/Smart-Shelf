@@ -127,8 +127,6 @@ export const editFine = createAsyncThunk(
             // Exclude id from payload and ensure amount is a string
             const { id: _, ...updatesToSend } = updates;
             updatesToSend.amount = String(updatesToSend.amount);
-            console.log(`Attempting to update fine ${id} with payload:`, updatesToSend);
-
             let url = customApiUrl || FINES_API_URL;
             let response = await retry(() =>
                 fetch(`${url}/${id}`, {
@@ -158,7 +156,6 @@ export const editFine = createAsyncThunk(
             if (!data.id) {
                 throw new Error("Invalid API response: Expected updated fine with id");
             }
-            console.log(`Successfully updated fine ${id}:`, data);
             const normalizedData = {
                 ...data,
                 bookId: data.bookId || data.id,
@@ -196,8 +193,6 @@ export const markAsPaid = createAsyncThunk(
     "fines/markAsPaid",
     async ({ id, updates, customApiUrl }, { rejectWithValue, getState }) => {
         try {
-            console.log(`Attempting to mark fine ${id} as paid with payload:`, updates);
-
             let url = customApiUrl || FINES_API_URL;
             let response = await retry(() =>
                 fetch(`${url}/${id}`, {
@@ -227,7 +222,6 @@ export const markAsPaid = createAsyncThunk(
             if (!data.id) {
                 throw new Error("Invalid API response: Expected updated fine with id");
             }
-            console.log(`Successfully marked fine ${id} as paid:`, data);
             const normalizedData = {
                 ...data,
                 amount: String(data.amount),
