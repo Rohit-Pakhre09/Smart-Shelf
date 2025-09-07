@@ -1,5 +1,6 @@
 import { Route, Routes, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useContext } from 'react';
+import { AppContext } from '../contexts/AppProvider';
 import LoginPage from '../pages/LoginPage.jsx';
 import SignUpPage from '../pages/SignupPage.jsx';
 import Dashboard from '../pages/DashBoard.jsx';
@@ -7,7 +8,7 @@ import BookManagement from '../pages/BookManagement.jsx';
 import MemberManagement from '../pages/MemberManagement.jsx';
 import IssuedBooks from '../pages/IssuedBooks.jsx';
 import FinePage from '../pages/FinesPage.jsx';
-import ErrorPage from '../pages/ErrorPage.jsx'; // Updated to correct folder name and extension
+import ErrorPage from '../pages/ErrorPage.jsx';
 import AccountPage from '../pages/AccountPage.jsx';
 import PrivateRoute from '../router/PrivateRoute';
 
@@ -22,11 +23,7 @@ const paths = [
 ];
 
 const AllRoutes = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
-
-  useEffect(() => {
-    setIsAuthenticated(!!localStorage.getItem('token'));
-  }, []);
+  const { isAuthenticated } = useContext(AppContext);
 
   if (isAuthenticated === null) {
     return (
