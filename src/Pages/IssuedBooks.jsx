@@ -332,23 +332,6 @@ const IssuedBooks = () => {
       return;
     }
 
-    const isBookOverdue = isOverdue(issuedBook.status, issuedBook.dueDate);
-    if (isBookOverdue) {
-      const confirmReturn = window.confirm(
-        "This book is overdue. Are you sure you want to mark it as returned?"
-      );
-      if (!confirmReturn) {
-        return;
-      }
-    } else {
-      const confirmReturn = window.confirm(
-        `Are you sure you want to mark "${getBook(issuedBook)?.title || "this book"}" as returned?`
-      );
-      if (!confirmReturn) {
-        return;
-      }
-    }
-
     setActionLoading((prev) => ({ ...prev, [id]: { ...prev[id], return: true } }));
     setActionError(null);
 
