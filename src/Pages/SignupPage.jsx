@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import SignUpForm from '../components/SignupForm';
 
 function SignUpPage() {
