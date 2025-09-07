@@ -758,8 +758,9 @@ const IssuedBooks = () => {
                   </>
                 )}
               </section>
+              <Footer />
             </div>
-            <Footer />
+
           </div>
         </section>
       </div>

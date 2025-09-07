@@ -132,7 +132,7 @@ const FinesPage = () => {
       <div className="flex flex-col flex-1 animation">
         <Navbar />
 
-        <section className="flex-1 lg:pt-[70px] m-0 lg:m-2.5 animation">
+        <section className="flex-1 pt-0 lg:pt-[70px] m-0 lg:m-2.5 animation">
           <div
             className={`h-[87vh] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl animation mt-6 ${open ? "lg:ml-68 lg:w-[calc(100%-17rem)]" : "lg:ml-24 lg:w-[calc(100%-6rem)]"
               }`}
@@ -274,6 +274,8 @@ const FinesPage = () => {
                   ))}
                 </div>
               )}
+              {/* Footer Section - Only shown when not loading */}
+              {!loading && <Footer />}
             </div>
 
             {/* Edit Modal */}
@@ -407,9 +409,6 @@ const FinesPage = () => {
                 </div>
               </div>
             )}
-
-            {/* Footer Section */}
-            <Footer />
           </div>
         </section>
       </div>

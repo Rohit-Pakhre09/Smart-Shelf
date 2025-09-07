@@ -31,13 +31,15 @@ const Navbar = () => {
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="w-5 h-5"
-          fill="none"
           viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
+          fill="currentColor"
+          className="size-6"
         >
-          <path d="M3 12l9-9 9 9M4 10v10h16V10" />
+          <path
+            fillRule="evenodd"
+            d="M2.25 2.25a.75.75 0 0 0 0 1.5H3v10.5a3 3 0 0 0 3 3h1.21l-1.172 3.513a.75.75 0 0 0 1.424.474l.329-.987h8.418l.33.987a.75.75 0 0 0 1.422-.474l-1.17-3.513H18a3 3 0 0 0 3-3V3.75h.75a.75.75 0 0 0 0-1.5H2.25Zm6.54 15h6.42l.5 1.5H8.29l.5-1.5Zm8.085-8.995a.75.75 0 1 0-.75-1.299 12.81 12.81 0 0 0-3.558 3.05L11.03 8.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l2.47-2.47 1.617 1.618a.75.75 0 0 0 1.146-.102 11.312 11.312 0 0 1 3.612-3.321Z"
+            clipRule="evenodd"
+          />
         </svg>
       ),
     },
@@ -47,11 +49,17 @@ const Navbar = () => {
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
           viewBox="0 0 24 24"
-          fill="currentColor"
-          className="size-6"
+          stroke="currentColor"
+          strokeWidth={2}
         >
-          <path d="M11.25 4.533A9.707 9.707 0 0 0 6 3a9.735 9.735 0 0 0-3.25.555.75.75 0 0 0-.5.707v14.25a.75.75 0 0 0 1 .707A8.237 8.237 0 0 1 6 18.75c1.995 0 3.823.707 5.25 1.886V4.533ZM12.75 20.636A8.214 8.214 0 0 1 18 18.75c.966 0 1.89.166 2.75.47a.75.75 0 0 0 1-.708V4.262a.75.75 0 0 0-.5-.707A9.735 9.735 0 0 0 18 3a9.707 9.707 0 0 0-5.25 1.533v16.103Z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 6v12m6-6H6"
+          />
         </svg>
       ),
     },
@@ -62,13 +70,20 @@ const Navbar = () => {
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="w-5 h-5"
-          fill="none"
           viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
+          fill="currentColor"
+          className="size-6"
         >
-          <path d="M9 12h6M9 16h6M5 20h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />
+          <path
+            fillRule="evenodd"
+            d="M5.478 5.559A1.5 1.5 0 0 1 6.912 4.5H9A.75.75 0 0 0 9 3H6.912a3 3 0 0 0-2.868 2.118l-2.411 7.838a3 3 0 0 0-.133.882V18a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3v-4.162c0-.299-.045-.596-.133-.882l-2.412-7.838A3 3 0 0 0 17.088 3H15a.75.75 0 0 0 0 1.5h2.088a1.5 1.5 0 0 1 1.434 1.059l2.213 7.191H17.89a3 3 0 0 0-2.684 1.658l-.256.513a1.5 1.5 0 0 1-1.342.829h-3.218a1.5 1.5 0 0 1-1.342-.83l-.256-.512a3 3 0 0 0-2.684-1.658H3.265l2.213-7.191Z"
+            clipRule="evenodd"
+          />
+          <path
+            fillRule="evenodd"
+            d="M12 2.25a.75.75 0 0 1 .75.75v6.44l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 1.06-1.06l1.72 1.72V3a.75.75 0 0 1 .75-.75Z"
+            clipRule="evenodd"
+          />
         </svg>
       ),
     },
@@ -78,13 +93,17 @@ const Navbar = () => {
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="w-5 h-5"
+          className="h-6 w-6"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
           strokeWidth={2}
         >
-          <path d="M17 20h5v-2a4 4 0 0 0-5-4M9 20H4v-2a4 4 0 0 1 5-4m3-4a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M12 12a4 4 0 100-8 4 4 0 000 8z"
+          />
         </svg>
       ),
     },
@@ -99,13 +118,15 @@ const Navbar = () => {
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="w-5 h-5"
-          fill="none"
           viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
+          fill="currentColor"
+          className="size-6"
         >
-          <path d="M5.121 17.804A10.97 10.97 0 0 1 12 15c2.386 0 4.577.832 6.879 2.804M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+          <path
+            fillRule="evenodd"
+            d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
+            clipRule="evenodd"
+          />
         </svg>
       ),
     },

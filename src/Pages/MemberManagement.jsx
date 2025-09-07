@@ -321,7 +321,7 @@ const MemberManagement = () => {
             </h2>
             <button
               aria-label="Close modal"
-              className="text-gray-400 hover:text-red-500 transition-colors"
+              className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
               onClick={() => setShowModal(false)}
               disabled={isSubmitting}
             >
@@ -583,7 +583,7 @@ const MemberManagement = () => {
                   ${lightTheme
                     ? "bg-gray-600 text-white hover:bg-gray-700"
                     : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""} cursor-pointer`}
                 aria-label="Cancel"
               >
                 Cancel
@@ -595,7 +595,7 @@ const MemberManagement = () => {
                   ${lightTheme
                     ? "bg-indigo-600 text-white hover:bg-indigo-700"
                     : "bg-indigo-500 text-white hover:bg-indigo-600"
-                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""} cursor-pointer`}
                 aria-label="Save member"
                 onClick={handleSubmit}
               >
@@ -619,7 +619,7 @@ const MemberManagement = () => {
 
       <div className="flex flex-col flex-1 w-full">
         <Navbar />
-        <section className="flex-1 pt-16 lg:pt-[70px] px-2 sm:px-4 lg:px-6">
+        <section className="flex-1 pt-0 lg:pt-[70px] px-2 sm:px-4 lg:px-6">
           <div
             className={`h-[87vh] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-10 ${open ? "lg:ml-68 lg:w-[calc(100%-17rem)]" : "lg:ml-20 lg:w-[calc(100%-6rem)]"
               }`}
