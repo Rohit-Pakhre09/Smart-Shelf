@@ -1,16 +1,16 @@
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { useContext } from 'react';
-import { AppContext } from '../contexts/AppProvider';
-import LoginPage from '../Pages/LoginPage.jsx';
-import SignUpPage from '../Pages/SignupPage.jsx';
-import Dashboard from '../Pages/DashBoard.jsx';
-import BookManagement from '../Pages/BookManagement.jsx';
-import MemberManagement from '../Pages/MemberManagement.jsx';
-import IssuedBooks from '../Pages/IssuedBooks.jsx';
-import FinePage from '../Pages/FinesPage.jsx';
-import ErrorPage from '../Pages/ErrorPage.jsx';
-import AccountPage from '../Pages/AccountPage.jsx';
-import PrivateRoute from '../router/PrivateRoute';
+import { AppContext } from '@/contexts/AppProvider';
+import LoginPage from '@/Pages/LoginPage.jsx';
+import SignUpPage from '@/Pages/SignupPage.jsx';
+import Dashboard from '@/Pages/DashBoard.jsx';
+import BookManagement from '@/Pages/BookManagement.jsx';
+import MemberManagement from '@/Pages/MemberManagement.jsx';
+import IssuedBooks from '@/Pages/IssuedBooks.jsx';
+import FinePage from '@/Pages/FinesPage.jsx';
+import ErrorPage from '@/Pages/ErrorPage.jsx';
+import AccountPage from '@/Pages/AccountPage.jsx';
+import PrivateRoute from '@/router/PrivateRoute';
 
 const paths = [
   { path: '/dashboard', element: <Dashboard /> },
