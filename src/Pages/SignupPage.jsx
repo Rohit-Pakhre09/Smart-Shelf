@@ -1,6 +1,12 @@
 import SignUpForm from '../components/SignupForm';
 
 function SignUpPage() {
+
+    // Title
+    useEffect(() => {
+        document.title = "Sign-up Page"
+    }, [])
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-200 p-4 sm:p-6 lg:p-8">
             <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl flex flex-col lg:flex-row overflow-hidden">

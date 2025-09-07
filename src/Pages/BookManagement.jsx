@@ -27,6 +27,11 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
+// Title
+useEffect(() => {
+  document.title = "Books | Smart Shelf"
+}, [])
+
 // Debouncing Function
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -503,9 +508,9 @@ const BookFormModal = ({
                 className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
                   ? "bg-gray-700 text-white border-gray-600"
                   : "bg-white text-black border-gray-300"
-              }`}
-              required
-              disabled={isSubmitting}
+                  }`}
+                required
+                disabled={isSubmitting}
               />
             </div>
             <div>

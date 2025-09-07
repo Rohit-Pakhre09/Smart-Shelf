@@ -42,7 +42,13 @@ const MemberManagement = () => {
   const itemsPerPage = 10;
   const dispatch = useDispatch();
 
+  // Url
   const membersUrl = "https://smart-shelf-server-qm2u.onrender.com/members";
+
+  // Title
+  useEffect(() => {
+    document.title = "Members | Smart Shelf"
+  }, [])
 
   // Fetch members using Redux thunk
   useEffect(() => {

@@ -4,6 +4,12 @@ import { AppContext } from "../contexts/AppProvider";
 import { Link } from "react-router-dom";
 
 const ErrorPage = () => {
+
+  // Title
+  useEffect(() => {
+    document.title = "404 Error"
+  }, [])
+  
   const { lightTheme } = useContext(AppContext);
   return (
     <section className="flex flex-col items-center justify-center min-h-screen">

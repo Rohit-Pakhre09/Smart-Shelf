@@ -8,6 +8,12 @@ import { fetchFines, editFine, markAsPaid } from "../modules/finesSlice";
 import { PencilIcon, CheckCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 const FinesPage = () => {
+
+  // Title
+  useEffect(() => {
+    document.title = "Fines | Smart Shelf"
+  }, [])
+
   const { lightTheme, open } = useContext(AppContext);
   const dispatch = useDispatch();
   const finesState = useSelector((state) => state.fines || { fines: [], loading: false, error: null });
@@ -199,12 +205,12 @@ const FinesPage = () => {
                       {/* Status Badge */}
                       <div
                         className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-semibold ${fine.status === "paid"
-                            ? lightTheme
-                              ? "bg-green-400 text-gray-800"
-                              : "bg-green-500 text-white"
-                            : lightTheme
-                              ? "bg-red-400 text-gray-800"
-                              : "bg-red-500 text-white"
+                          ? lightTheme
+                            ? "bg-green-400 text-gray-800"
+                            : "bg-green-500 text-white"
+                          : lightTheme
+                            ? "bg-red-400 text-gray-800"
+                            : "bg-red-500 text-white"
                           }`}
                       >
                         {fine.status.charAt(0).toUpperCase() + fine.status.slice(1)}
