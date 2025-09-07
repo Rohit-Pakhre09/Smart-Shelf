@@ -1,13 +1,13 @@
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import LoginPage from '../Pages/LoginPage';
-import SignUpPage from '../pages/SignupPage';
+import SignUpPage from '../Pages/SignupPage';
 import Dashboard from '../Pages/DashBoard';
 import BookManagement from '../Pages/BookManagement';
 import MemberManagement from '../Pages/MemberManagement';
 import IssuedBooks from '../Pages/IssuedBooks';
 import FinePage from '../Pages/FinesPage';
-import ErrorPage from '../Pages/ErrorPage';
+import ErrorPage from '../pages/ErrorPage';
 import AccountPage from '../Pages/AccountPage';
 import PrivateRoute from '../router/PrivateRoute';
 
