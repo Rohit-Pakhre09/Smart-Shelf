@@ -45,6 +45,12 @@ const DashBoard = () => {
   const [membersError, setMembersError] = useState(null);
 
 
+  setCsvBook(books)
+
+useEffect(() => {
+    
+  setCsvMember(members);
+}, [members, setCsvMember]);
 
   // Fetch books and issued books from Redux
   useEffect(() => {

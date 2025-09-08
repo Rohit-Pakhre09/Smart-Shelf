@@ -58,7 +58,9 @@ const MemberManagement = () => {
       .then((data) => {
         setMembers(Array.isArray(data) ? data : []);
         setLoading(false);
-        setCsvMember(members)
+      
+        
+        
       })
       .catch((err) => {
         console.error("Error fetching members:", err);
