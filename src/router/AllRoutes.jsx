@@ -1,50 +1,55 @@
-import { Route, Routes, Navigate } from 'react-router-dom';
-import { useContext } from 'react';
-import { AppContext } from '@/contexts/AppProvider';
-import LoginPage from '@/Pages/LoginPage.jsx';
-import SignUpPage from '@/Pages/SignupPage.jsx';
-import Dashboard from '@/Pages/DashBoard.jsx';
-import BookManagement from '@/Pages/BookManagement.jsx';
-import MemberManagement from '@/Pages/MemberManagement.jsx';
-import IssuedBooks from '@/Pages/IssuedBooks.jsx';
-import FinePage from '@/Pages/FinesPage.jsx';
-import ErrorPage from '@/Pages/ErrorPage.jsx';
-import AccountPage from '@/Pages/AccountPage.jsx';
-import PrivateRoute from '@/router/PrivateRoute';
 
+import { Route, Routes, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import LoginPage from "../Pages/LoginPage";
+import DashBoard from "../Pages/DashBoard";
+import BookManagement from "../Pages/BookManagement";
+import MemberManagement from "../Pages/MemberManagement";
+import FinePage from "../Pages/FinesPage";
+import ErrorPage from "../Pages/ErrorPage";
+import AccountPage from "../Pages/AccountPage";
+import PrivateRoute from "./PrivateRoute";
+import  SignUpPage from "../Pages/SignupPage"
+import IssuedBooks from "../Pages/IssuedBooks"
 const paths = [
-  { path: '/dashboard', element: <Dashboard /> },
-  { path: '/books', element: <BookManagement /> },
-  { path: '/members', element: <MemberManagement /> },
-  { path: '/issuedBooks', element: <IssuedBooks /> },
-  { path: '/fines', element: <FinePage /> },
-  { path: '/account', element: <AccountPage /> },
-  { path: '*', element: <ErrorPage /> },
+  { path: "/dashboard", element: <DashBoard /> },
+  { path: "/books", element: <BookManagement /> },
+  { path: "/members", element: <MemberManagement /> },
+    { path: '/issuedBooks', element: <IssuedBooks /> },
+  { path: "/fines", element: <FinePage /> },
+  { path: "/account", element: <AccountPage /> },
+  { path: "*", element: <ErrorPage /> }
 ];
 
 const AllRoutes = () => {
-  const { isAuthenticated } = useContext(AppContext);
+  const [auth, setAuth] = useState(null);
 
-  if (isAuthenticated === null) {
+  useEffect(() => {
+    const isAuthenticate = localStorage.getItem("isAuthenticated") === "true";
+    setAuth(isAuthenticate);
+  }, []);
+
+  if (auth === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="flex justify-center items-center min-h-[50vh] w-full">
-          <span className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
-        </div>
+        Loading...
       </div>
     );
   }
 
   return (
     <Routes>
+      {/* Public routes */}
       <Route
         path="/"
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+        element={auth ? <Navigate to="/dashboard" replace /> : <LoginPage />}
       />
       <Route
         path="/signup"
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <SignUpPage />}
+        element={<SignUpPage  />}
       />
+
+      {/* Protected routes */}
       {paths.map(({ path, element }, index) => (
         <Route
           key={index}
@@ -52,6 +57,9 @@ const AllRoutes = () => {
           element={<PrivateRoute>{element}</PrivateRoute>}
         />
       ))}
+
+      {/* Catch-all error page */}
+      <Route path="*" element={<ErrorPage />} />
     </Routes>
   );
 };
