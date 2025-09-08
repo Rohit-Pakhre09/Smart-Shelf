@@ -205,13 +205,21 @@ const BookFormModal = ({
         );
         return;
       }
-      if (
-        name === "year" &&
-        value &&
-        (value < 1000 || value > new Date().getFullYear())
-      ) {
-        setLocalError("Year must be between 1000 and the current year.");
-        return;
+      if (name === "year") {
+        // Allow empty or partial input without setting an error
+        if (!value || isNaN(value)) {
+          setLocalError(null); // Clear error for empty or non-numeric input
+          setFormData((prev) => ({ ...prev, [name]: value }));
+          return;
+        }
+
+        const year = Number(value);
+        if (year < 1000 || year > new Date().getFullYear()) {
+          setLocalError("Year must be between 1000 and the current year.");
+        } else {
+          setLocalError(null); // Clear error if valid
+        }
+        setFormData((prev) => ({ ...prev, [name]: value }));
       }
       if (name === "pages" && value && value < 1) {
         setLocalError("Pages must be a positive number.");
@@ -308,19 +316,18 @@ const BookFormModal = ({
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 transition-opacity p-4 sm:p-5">
       <div
-        className={`relative p-4 sm:p-6 rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg max-h-[80vh] overflow-y-auto scrollbar-thin transform transition-all scale-100 hover:scale-102 ${
-          lightTheme
-            ? "bg-gray-800 text-white border border-gray-700"
-            : "bg-white text-black border border-gray-200"
-        }`}
+        className={`relative p-4 sm:p-6 rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg max-h-[80vh] overflow-y-auto scrollbar-thin transform transition-all scale-100 hover:scale-102 ${lightTheme
+          ? "bg-gray-800 text-white border border-gray-700"
+          : "bg-white text-black border border-gray-200"
+          }`}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">
             {modalType === "view"
               ? "Book Details"
               : modalType === "edit"
-              ? "Edit Book"
-              : "Add Book"}
+                ? "Edit Book"
+                : "Add Book"}
           </h2>
           <button
             onClick={() => setShowModal(false)}
@@ -360,9 +367,8 @@ const BookFormModal = ({
                 Title
               </label>
               <p
-                className={`p-3 border rounded-lg ${
-                  lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
-                }`}
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
               >
                 {selectedBook?.title || "N/A"}
               </p>
@@ -372,9 +378,8 @@ const BookFormModal = ({
                 Author
               </label>
               <p
-                className={`p-3 border rounded-lg ${
-                  lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
-                }`}
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
               >
                 {selectedBook?.author || "N/A"}
               </p>
@@ -384,9 +389,8 @@ const BookFormModal = ({
                 Genres
               </label>
               <p
-                className={`p-3 border rounded-lg ${
-                  lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
-                }`}
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
               >
                 {Array.isArray(selectedBook?.genre)
                   ? selectedBook.genre.join(", ")
@@ -398,9 +402,8 @@ const BookFormModal = ({
                 Publisher
               </label>
               <p
-                className={`p-3 border rounded-lg ${
-                  lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
-                }`}
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
               >
                 {selectedBook?.publisher || "N/A"}
               </p>
@@ -410,9 +413,8 @@ const BookFormModal = ({
                 Language
               </label>
               <p
-                className={`p-3 border rounded-lg ${
-                  lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
-                }`}
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
               >
                 {selectedBook?.language || "N/A"}
               </p>
@@ -422,9 +424,8 @@ const BookFormModal = ({
                 Year
               </label>
               <p
-                className={`p-3 border rounded-lg ${
-                  lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
-                }`}
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
               >
                 {selectedBook?.year || "N/A"}
               </p>
@@ -434,9 +435,8 @@ const BookFormModal = ({
                 Pages
               </label>
               <p
-                className={`p-3 border rounded-lg ${
-                  lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
-                }`}
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
               >
                 {selectedBook?.pages || "N/A"}
               </p>
@@ -446,9 +446,8 @@ const BookFormModal = ({
                 Description
               </label>
               <p
-                className={`p-3 border rounded-lg ${
-                  lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
-                }`}
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
               >
                 {selectedBook?.description || "N/A"}
               </p>
@@ -458,9 +457,8 @@ const BookFormModal = ({
                 Price
               </label>
               <p
-                className={`p-3 border rounded-lg ${
-                  lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
-                }`}
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
               >
                 ₹{selectedBook?.price || "N/A"}
               </p>
@@ -470,9 +468,8 @@ const BookFormModal = ({
                 Image URL
               </label>
               <p
-                className={`p-3 border rounded-lg truncate ${
-                  lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
-                }`}
+                className={`p-3 border rounded-lg truncate ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
               >
                 {selectedBook?.img || "N/A"}
               </p>
@@ -482,9 +479,8 @@ const BookFormModal = ({
                 Popularity
               </label>
               <p
-                className={`p-3 border rounded-lg ${
-                  lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
-                }`}
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
               >
                 {selectedBook?.popularity ? `${selectedBook.popularity}/5` : "N/A"}
               </p>
@@ -494,9 +490,8 @@ const BookFormModal = ({
                 Copies
               </label>
               <div
-                className={`p-3 border rounded-lg ${
-                  lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
-                }`}
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
               >
                 {selectedBook?.copies && selectedBook.copies.length > 0 ? (
                   <ul className="list-disc pl-5 space-y-1">
@@ -517,11 +512,10 @@ const BookFormModal = ({
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base ${
-                  lightTheme
-                    ? "bg-gray-600 text-white hover:bg-gray-700"
-                    : "bg-gray-300 text-gray-800 hover:bg-gray-400"
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-600 text-white hover:bg-gray-700"
+                  : "bg-gray-300 text-gray-800 hover:bg-gray-400"
+                  }`}
               >
                 Close
               </button>
@@ -538,11 +532,10 @@ const BookFormModal = ({
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                  lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                }`}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
                 required
                 disabled={isSubmitting}
               />
@@ -556,11 +549,10 @@ const BookFormModal = ({
                 name="author"
                 value={formData.author}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                  lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                }`}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
                 required
                 disabled={isSubmitting}
               />
@@ -574,11 +566,10 @@ const BookFormModal = ({
                 name="genre"
                 value={formData.genre}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                  lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                }`}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
                 disabled={isSubmitting}
               />
             </div>
@@ -591,11 +582,10 @@ const BookFormModal = ({
                 name="publisher"
                 value={formData.publisher}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                  lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                }`}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
                 disabled={isSubmitting}
               />
             </div>
@@ -608,11 +598,10 @@ const BookFormModal = ({
                 name="language"
                 value={formData.language}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                  lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                }`}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
                 disabled={isSubmitting}
               />
             </div>
@@ -625,11 +614,10 @@ const BookFormModal = ({
                 name="year"
                 value={formData.year}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                  lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                }`}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
                 disabled={isSubmitting}
               />
             </div>
@@ -642,11 +630,10 @@ const BookFormModal = ({
                 name="pages"
                 value={formData.pages}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                  lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                }`}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
                 disabled={isSubmitting}
               />
             </div>
@@ -658,11 +645,10 @@ const BookFormModal = ({
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                  lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                }`}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
                 rows="4"
                 disabled={isSubmitting}
               />
@@ -676,11 +662,10 @@ const BookFormModal = ({
                 name="price"
                 value={formData.price}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                  lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                }`}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
                 disabled={isSubmitting}
               />
             </div>
@@ -693,11 +678,10 @@ const BookFormModal = ({
                 name="img"
                 value={formData.img}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                  lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                }`}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
                 disabled={isSubmitting}
               />
             </div>
@@ -710,11 +694,10 @@ const BookFormModal = ({
                 name="popularity"
                 value={formData.popularity}
                 onChange={handleChange}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                  lightTheme
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-black border-gray-300"
-                }`}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+                  }`}
                 step="0.01"
                 disabled={isSubmitting}
               />
@@ -724,9 +707,8 @@ const BookFormModal = ({
                 Copies
               </label>
               <div
-                className={`p-3 border rounded-lg ${
-                  lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
-                }`}
+                className={`p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
               >
                 {formData.copies.length > 0 ? (
                   <ul className="list-disc pl-5 space-y-1 mb-4">
@@ -743,9 +725,8 @@ const BookFormModal = ({
                         <button
                           type="button"
                           onClick={() => handleRemoveCopy(index)}
-                          className={`ml-2 text-red-500 hover:text-red-700 ${
-                            lightTheme ? "text-red-400" : "text-red-600"
-                          }`}
+                          className={`ml-2 text-red-500 hover:text-red-700 ${lightTheme ? "text-red-400" : "text-red-600"
+                            }`}
                           disabled={isSubmitting}
                         >
                           Remove
@@ -767,11 +748,10 @@ const BookFormModal = ({
                     name="id"
                     value={newCopy.id}
                     onChange={handleCopyChange}
-                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                      lightTheme
-                        ? "bg-gray-700 text-white border-gray-600"
-                        : "bg-white text-black border-gray-300"
-                    }`}
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                      ? "bg-gray-700 text-white border-gray-600"
+                      : "bg-white text-black border-gray-300"
+                      }`}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -784,11 +764,10 @@ const BookFormModal = ({
                     name="isbn"
                     value={newCopy.isbn}
                     onChange={handleCopyChange}
-                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                      lightTheme
-                        ? "bg-gray-700 text-white border-gray-600"
-                        : "bg-white text-black border-gray-300"
-                    }`}
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                      ? "bg-gray-700 text-white border-gray-600"
+                      : "bg-white text-black border-gray-300"
+                      }`}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -800,11 +779,10 @@ const BookFormModal = ({
                     name="availability"
                     value={newCopy.availability}
                     onChange={handleCopyChange}
-                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                      lightTheme
-                        ? "bg-gray-700 text-white border-gray-600"
-                        : "bg-white text-black border-gray-300"
-                    }`}
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                      ? "bg-gray-700 text-white border-gray-600"
+                      : "bg-white text-black border-gray-300"
+                      }`}
                     disabled={isSubmitting}
                   >
                     <option value="available">Available</option>
@@ -821,11 +799,10 @@ const BookFormModal = ({
                     name="edition"
                     value={newCopy.edition}
                     onChange={handleCopyChange}
-                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                      lightTheme
-                        ? "bg-gray-700 text-white border-gray-600"
-                        : "bg-white text-black border-gray-300"
-                    }`}
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                      ? "bg-gray-700 text-white border-gray-600"
+                      : "bg-white text-black border-gray-300"
+                      }`}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -837,11 +814,10 @@ const BookFormModal = ({
                     name="condition"
                     value={newCopy.condition}
                     onChange={handleCopyChange}
-                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${
-                      lightTheme
-                        ? "bg-gray-700 text-white border-gray-600"
-                        : "bg-white text-black border-gray-300"
-                    }`}
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition-all text-sm sm:text-base ${lightTheme
+                      ? "bg-gray-700 text-white border-gray-600"
+                      : "bg-white text-black border-gray-300"
+                      }`}
                     disabled={isSubmitting}
                   >
                     <option value="new">New</option>
@@ -852,11 +828,10 @@ const BookFormModal = ({
                 <button
                   type="button"
                   onClick={handleAddCopy}
-                  className={`mt-2 px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base ${
-                    lightTheme
-                      ? "bg-green-600 text-white hover:bg-green-700"
-                      : "bg-green-500 text-white hover:bg-green-600"
-                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`mt-2 px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base ${lightTheme
+                    ? "bg-green-600 text-white hover:bg-green-700"
+                    : "bg-green-500 text-white hover:bg-green-600"
+                    } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                   disabled={isSubmitting}
                 >
                   Add Copy
@@ -867,11 +842,10 @@ const BookFormModal = ({
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base ${
-                  lightTheme
-                    ? "bg-gray-600 text-white hover:bg-gray-700"
-                    : "bg-gray-300 text-gray-800 hover:bg-gray-400"
-                } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base ${lightTheme
+                  ? "bg-gray-600 text-white hover:bg-gray-700"
+                  : "bg-gray-300 text-gray-800 hover:bg-gray-400"
+                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                 disabled={isSubmitting}
               >
                 Cancel
@@ -879,11 +853,10 @@ const BookFormModal = ({
               <button
                 type="button"
                 onClick={handleSubmit}
-                className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base flex items-center gap-2 ${
-                  lightTheme
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                    : "bg-indigo-500 text-white hover:bg-indigo-600"
-                } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`px-4 py-2 rounded-lg font-medium cursor-pointer transition-all transform hover:scale-105 text-sm sm:text-base flex items-center gap-2 ${lightTheme
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                  : "bg-indigo-500 text-white hover:bg-indigo-600"
+                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                 disabled={isSubmitting}
               >
                 {isSubmitting && (
@@ -1046,9 +1019,8 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div
-        className={`relative p-6 rounded-xl shadow-2xl max-w-md max-h-[80vh] overflow-y-auto ${
-          lightTheme ? "bg-gray-800 text-white" : "bg-white text-black"
-        }`}
+        className={`relative p-6 rounded-xl shadow-2xl max-w-md max-h-[80vh] overflow-y-auto ${lightTheme ? "bg-gray-800 text-white" : "bg-white text-black"
+          }`}
       >
         <h2 className="text-2xl font-semibold mb-4">Issue Book: {selectedBook?.title}</h2>
         {localError && (
@@ -1071,9 +1043,8 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
               name="copyId"
               value={issueData.copyId}
               onChange={handleChange}
-              className={`w-full p-3 border rounded-lg ${
-                lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
-              }`}
+              className={`w-full p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
+                }`}
               required
               disabled={isSubmitting}
             >
@@ -1096,9 +1067,8 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
               name="memberId"
               value={issueData.memberId}
               onChange={handleChange}
-              className={`w-full p-3 border rounded-lg ${
-                lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
-              }`}
+              className={`w-full p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
+                }`}
               required
               placeholder="Enter Member ID"
               disabled={isSubmitting}
@@ -1113,9 +1083,8 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
               name="issuedBy"
               value={issueData.issuedBy}
               onChange={handleChange}
-              className={`w-full p-3 border rounded-lg ${
-                lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
-              }`}
+              className={`w-full p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
+                }`}
               required
               placeholder="Enter Issued By"
               disabled={isSubmitting}
@@ -1129,9 +1098,8 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
               selected={issueData.issueDate}
               onChange={(date) => handleDateChange(date, "issueDate")}
               dateFormat="yyyy-MM-dd"
-              className={`w-full p-3 border rounded-lg ${
-                lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
-              }`}
+              className={`w-full p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
+                }`}
               required
               disabled={isSubmitting}
             />
@@ -1144,9 +1112,8 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
               selected={issueData.dueDate}
               onChange={(date) => handleDateChange(date, "dueDate")}
               dateFormat="yyyy-MM-dd"
-              className={`w-full p-3 border rounded-lg ${
-                lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
-              }`}
+              className={`w-full p-3 border rounded-lg ${lightTheme ? "bg-gray-700 text-white" : "bg-white text-black"
+                }`}
               required
               disabled={isSubmitting}
             />
@@ -1155,11 +1122,10 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
             <button
               type="button"
               onClick={() => setShowModal(false)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 ${
-                lightTheme
-                  ? "bg-gray-600 text-white hover:bg-gray-700"
-                  : "bg-gray-300 text-gray-800 hover:bg-gray-400"
-              } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 ${lightTheme
+                ? "bg-gray-600 text-white hover:bg-gray-700"
+                : "bg-gray-300 text-gray-800 hover:bg-gray-400"
+                } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
               disabled={isSubmitting}
             >
               Cancel
@@ -1167,11 +1133,10 @@ const IssueBookModal = ({ showModal, setShowModal, selectedBook, lightTheme, dis
             <button
               type="button"
               onClick={handleSubmit}
-              className={`px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 flex items-center gap-2 ${
-                lightTheme
-                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                  : "bg-indigo-500 text-white hover:bg-indigo-600"
-              } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105 flex items-center gap-2 ${lightTheme
+                ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                : "bg-indigo-500 text-white hover:bg-indigo-600"
+                } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
               disabled={isSubmitting}
             >
               {isSubmitting && (
@@ -1362,6 +1327,15 @@ const BookManagement = () => {
       if (debouncedFilterBy === "condition-worn") {
         return book.copies?.some((copy) => copy.condition === "worn");
       }
+      if (debouncedFilterBy === "reserved") {
+        return book.copies?.some((copy) => copy.availability === "reserved");
+      }
+      if (debouncedFilterBy === "available") {
+        return book.copies?.some((copy) => copy.availability === "available");
+      }
+      if (debouncedFilterBy === "issued") {
+        return book.copies?.some((copy) => copy.availability === "issued");
+      }
       return true;
     })
     .sort((a, b) => {
@@ -1474,18 +1448,16 @@ const BookManagement = () => {
         <Navbar />
         <section className="flex-1 pt-0 lg:pt-[70px] m-0 lg:m-2.5 transition-all duration-500 ease-in-out">
           <div
-            className={`overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-6 ${
-              open
-                ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
-                : "lg:ml-24 lg:w-[calc(100%-6rem)]"
-            }`}
+            className={`overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-6 ${open
+              ? "lg:ml-68 lg:w-[calc(100%-17rem)]"
+              : "lg:ml-24 lg:w-[calc(100%-6rem)]"
+              }`}
             style={{ height: "calc(100vh - 70px - 50px)" }}
           >
             <div className="flex justify-between items-center">
               <p
-                className={`${
-                  lightTheme ? "text-white" : "text-black"
-                } text-3xl pb-3 mt-5 pl-5 font-bold transition-all duration-500`}
+                className={`${lightTheme ? "text-white" : "text-black"
+                  } text-3xl pb-3 mt-5 pl-5 font-bold transition-all duration-500`}
               >
                 Books Management
               </p>
@@ -1506,126 +1478,106 @@ const BookManagement = () => {
             )}
             <div className="flex flex-col gap-5 p-3 h-full">
               <section
-                className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 rounded-2xl shadow-lg transition-colors ${
-                  lightTheme ? "bg-gray-900" : "bg-white"
-                }`}
+                className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 rounded-2xl shadow-lg transition-colors ${lightTheme ? "bg-gray-900" : "bg-white"
+                  }`}
               >
                 <div
-                  className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl shadow-sm hover:scale-102 shadow-blue-400 ${
-                    lightTheme ? "bg-gray-800" : "bg-gray-100"
-                  }`}
+                  className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl shadow-sm hover:scale-102 shadow-blue-400 ${lightTheme ? "bg-gray-800" : "bg-gray-100"
+                    }`}
                 >
                   <BookOpen
-                    className={`w-10 h-10 ${
-                      lightTheme ? "text-indigo-400" : "text-indigo-600"
-                    }`}
+                    className={`w-10 h-10 ${lightTheme ? "text-indigo-400" : "text-indigo-600"
+                      }`}
                   />
                   <p
-                    className={`font-medium text-lg ${
-                      lightTheme ? "text-gray-200" : "text-gray-800"
-                    }`}
+                    className={`font-medium text-lg ${lightTheme ? "text-gray-200" : "text-gray-800"
+                      }`}
                   >
                     Total Books
                   </p>
                   <p
-                    className={`text-3xl font-bold ${
-                      lightTheme ? "text-white" : "text-gray-900"
-                    }`}
+                    className={`text-3xl font-bold ${lightTheme ? "text-white" : "text-gray-900"
+                      }`}
                   >
                     {booksLength}
                   </p>
                 </div>
                 <div
-                  className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl shadow-sm hover:scale-102 shadow-blue-400 ${
-                    lightTheme ? "bg-gray-800" : "bg-gray-100"
-                  }`}
+                  className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl shadow-sm hover:scale-102 shadow-blue-400 ${lightTheme ? "bg-gray-800" : "bg-gray-100"
+                    }`}
                 >
                   <Users
-                    className={`w-10 h-10 ${
-                      lightTheme ? "text-green-400" : "text-green-600"
-                    }`}
+                    className={`w-10 h-10 ${lightTheme ? "text-green-400" : "text-green-600"
+                      }`}
                   />
                   <p
-                    className={`font-medium text-lg ${
-                      lightTheme ? "text-gray-200" : "text-gray-800"
-                    }`}
+                    className={`font-medium text-lg ${lightTheme ? "text-gray-200" : "text-gray-800"
+                      }`}
                   >
                     Total Authors
                   </p>
                   <p
-                    className={`text-3xl font-bold ${
-                      lightTheme ? "text-white" : "text-gray-900"
-                    }`}
+                    className={`text-3xl font-bold ${lightTheme ? "text-white" : "text-gray-900"
+                      }`}
                   >
                     {authorLength}
                   </p>
                 </div>
                 <div
-                  className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl shadow-sm hover:scale-102 shadow-blue-400 ${
-                    lightTheme ? "bg-gray-800" : "bg-gray-100"
-                  }`}
+                  className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl shadow-sm hover:scale-102 shadow-blue-400 ${lightTheme ? "bg-gray-800" : "bg-gray-100"
+                    }`}
                 >
                   <Star
-                    className={`w-10 h-10 ${
-                      lightTheme ? "text-yellow-400" : "text-yellow-500"
-                    }`}
+                    className={`w-10 h-10 ${lightTheme ? "text-yellow-400" : "text-yellow-500"
+                      }`}
                   />
                   <p
-                    className={`font-medium text-lg ${
-                      lightTheme ? "text-gray-200" : "text-gray-800"
-                    }`}
+                    className={`font-medium text-lg ${lightTheme ? "text-gray-200" : "text-gray-800"
+                      }`}
                   >
                     Popular Book
                   </p>
                   <p
-                    className={`text-xl font-semibold text-center ${
-                      lightTheme ? "text-white" : "text-gray-900"
-                    }`}
+                    className={`text-xl font-semibold text-center ${lightTheme ? "text-white" : "text-gray-900"
+                      }`}
                   >
                     {popularBook}
                   </p>
                 </div>
                 <div
-                  className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl shadow-sm hover:scale-102 shadow-blue-400 ${
-                    lightTheme ? "bg-gray-800" : "bg-gray-100"
-                  }`}
+                  className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl shadow-sm hover:scale-102 shadow-blue-400 ${lightTheme ? "bg-gray-800" : "bg-gray-100"
+                    }`}
                 >
                   <Bookmark
-                    className={`w-10 h-10 ${
-                      lightTheme ? "text-red-400" : "text-red-600"
-                    }`}
+                    className={`w-10 h-10 ${lightTheme ? "text-red-400" : "text-red-600"
+                      }`}
                   />
                   <p
-                    className={`font-medium text-lg ${
-                      lightTheme ? "text-gray-200" : "text-gray-800"
-                    }`}
+                    className={`font-medium text-lg ${lightTheme ? "text-gray-200" : "text-gray-800"
+                      }`}
                   >
                     Issued Books
                   </p>
                   <p
-                    className={`text-3xl font-bold ${
-                      lightTheme ? "text-white" : "text-gray-900"
-                    }`}
+                    className={`text-3xl font-bold ${lightTheme ? "text-white" : "text-gray-900"
+                      }`}
                   >
                     {issuedLength}
                   </p>
                 </div>
               </section>
               <section
-                className={`flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-5 rounded-2xl shadow-md ${
-                  lightTheme ? "bg-gray-900" : "bg-white"
-                }`}
+                className={`flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-5 rounded-2xl shadow-md ${lightTheme ? "bg-gray-900" : "bg-white"
+                  }`}
               >
                 <div
-                  className={`flex items-center w-full md:max-w-lg px-4 py-2 border rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 ${
-                    lightTheme ? "bg-gray-800 border-gray-600" : "bg-gray-50 border-gray-200"
-                  }`}
+                  className={`flex items-center w-full md:max-w-lg px-4 py-2 border rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 ${lightTheme ? "bg-gray-800 border-gray-600" : "bg-gray-50 border-gray-200"
+                    }`}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className={`h-5 w-5 mr-2 ${
-                      lightTheme ? "text-gray-300" : "text-gray-500"
-                    }`}
+                    className={`h-5 w-5 mr-2 ${lightTheme ? "text-gray-300" : "text-gray-500"
+                      }`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -1638,11 +1590,10 @@ const BookManagement = () => {
                     />
                   </svg>
                   <input
-                    className={`flex-1 bg-transparent outline-none text-sm md:text-base ${
-                      lightTheme
-                        ? "text-white placeholder-gray-400"
-                        : "text-gray-700 placeholder-gray-400"
-                    }`}
+                    className={`flex-1 bg-transparent outline-none text-sm md:text-base ${lightTheme
+                      ? "text-white placeholder-gray-400"
+                      : "text-gray-700 placeholder-gray-400"
+                      }`}
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -1651,11 +1602,10 @@ const BookManagement = () => {
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
                   <select
-                    className={`px-4 py-2 rounded-lg shadow-sm border text-sm cursor-pointer w-full sm:w-auto ${
-                      lightTheme
-                        ? "bg-gray-800 text-white border-gray-600"
-                        : "bg-white text-gray-700 border-gray-300"
-                    }`}
+                    className={`px-4 py-2 rounded-lg shadow-sm border text-sm cursor-pointer w-full sm:w-auto ${lightTheme
+                      ? "bg-gray-800 text-white border-gray-600"
+                      : "bg-white text-gray-700 border-gray-300"
+                      }`}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
                     <option value="">Sort By</option>
@@ -1664,11 +1614,10 @@ const BookManagement = () => {
                     <option value="popularity">Popularity</option>
                   </select>
                   <select
-                    className={`px-4 py-2 rounded-lg shadow-sm border text-sm cursor-pointer w-full sm:w-auto ${
-                      lightTheme
+                    className={`px-4 py-2 rounded-lg shadow-sm border text-sm cursor-pointer w-full sm:w-auto ${lightTheme
                         ? "bg-gray-800 text-white border-gray-600"
                         : "bg-white text-gray-700 border-gray-300"
-                    }`}
+                      }`}
                     onChange={(e) => setFilterBy(e.target.value)}
                   >
                     <option value="">Filter By</option>
@@ -1680,14 +1629,16 @@ const BookManagement = () => {
                     <option value="condition-new">Condition: New</option>
                     <option value="condition-good">Condition: Good</option>
                     <option value="condition-worn">Condition: Worn</option>
+                    <option value="available">Available</option>
+                    <option value="reserved">Reserved</option>
+                    <option value="issued">Issued</option>
                   </select>
                   <button
                     onClick={handleAddBook}
-                    className={`flex items-center justify-center gap-2 rounded-md shadow-md cursor-pointer ${
-                      lightTheme
-                        ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                        : "bg-indigo-500 hover:bg-indigo-600 text-white"
-                    }`}
+                    className={`flex items-center justify-center gap-2 rounded-md shadow-md cursor-pointer ${lightTheme
+                      ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                      : "bg-indigo-500 hover:bg-indigo-600 text-white"
+                      }`}
                   >
                     <span className="flex md:hidden w-10 h-10 rounded-full items-center justify-center">
                       <svg
@@ -1726,9 +1677,8 @@ const BookManagement = () => {
                 </div>
               </section>
               <section
-                className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-4 rounded-2xl ${
-                  lightTheme ? "bg-gray-900" : "bg-white"
-                }`}
+                className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-4 rounded-2xl ${lightTheme ? "bg-gray-900" : "bg-white"
+                  }`}
               >
                 {loading ? (
                   <div className="flex justify-center items-center min-h-[50vh] w-full col-span-full">
@@ -1759,9 +1709,8 @@ const BookManagement = () => {
                       }}
                     />
                     <p
-                      className={`text-lg font-medium ${
-                        lightTheme ? "text-gray-300" : "text-gray-600"
-                      }`}
+                      className={`text-lg font-medium ${lightTheme ? "text-gray-300" : "text-gray-600"
+                        }`}
                     >
                       No books found
                     </p>
@@ -1773,11 +1722,10 @@ const BookManagement = () => {
                   <button
                     disabled={currentPage === 1}
                     onClick={() => paginate(currentPage - 1)}
-                    className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all cursor-pointer ${
-                      lightTheme
-                        ? "bg-gray-800 text-white hover:bg-gray-700"
-                        : "bg-gray-100 text-black hover:bg-gray-200"
-                    }`}
+                    className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all cursor-pointer ${lightTheme
+                      ? "bg-gray-800 text-white hover:bg-gray-700"
+                      : "bg-gray-100 text-black hover:bg-gray-200"
+                      }`}
                     aria-label="Previous page"
                   >
                     <ChevronLeft size={16} />
@@ -1786,15 +1734,14 @@ const BookManagement = () => {
                     <button
                       key={i}
                       onClick={() => paginate(i + 1)}
-                      className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all cursor-pointer ${
-                        currentPage === i + 1
-                          ? lightTheme
-                            ? "bg-blue-600 text-white"
-                            : "bg-blue-200 text-blue-900"
-                          : lightTheme
+                      className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-all cursor-pointer ${currentPage === i + 1
+                        ? lightTheme
+                          ? "bg-blue-600 text-white"
+                          : "bg-blue-200 text-blue-900"
+                        : lightTheme
                           ? "bg-gray-800 text-white hover:bg-gray-700"
                           : "bg-gray-100 text-black hover:bg-gray-200"
-                      }`}
+                        }`}
                       aria-label={`Page ${i + 1}`}
                       aria-current={currentPage === i + 1 ? "page" : undefined}
                     >
@@ -1804,11 +1751,10 @@ const BookManagement = () => {
                   <button
                     disabled={currentPage === totalPages}
                     onClick={() => paginate(currentPage + 1)}
-                    className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all cursor-pointer ${
-                      lightTheme
-                        ? "bg-gray-800 text-white hover:bg-gray-700"
-                        : "bg-gray-100 text-black hover:bg-gray-200"
-                    }`}
+                    className={`px-2 sm:px-3 py-1 rounded disabled:opacity-50 transition-all cursor-pointer ${lightTheme
+                      ? "bg-gray-800 text-white hover:bg-gray-700"
+                      : "bg-gray-100 text-black hover:bg-gray-200"
+                      }`}
                     aria-label="Next page"
                   >
                     <ChevronRight size={16} />
