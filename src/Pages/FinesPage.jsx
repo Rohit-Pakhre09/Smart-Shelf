@@ -178,7 +178,7 @@ const FinesPage = () => {
               Fines Management
             </p>
 
-            <div className="min-h-full flex flex-col gap-5 p-3">
+            <div className={`min-h-full flex flex-col gap-5 p-3 bg-amber-200 p-5 ${lightTheme ? "bg-gray-900" : "bg-neutral-50"} animation rounded-lg`}>
               {loading ? (
                 <div className="flex justify-center items-center min-h-[50vh] w-full">
                   <span className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
@@ -198,12 +198,11 @@ const FinesPage = () => {
                   No fines found.
                 </p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 px-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 px-2 justify-between">
                   {fines.map((fine) => (
                     <div
                       key={fine.id}
-                      className={`relative p-3 sm:p-4 lg:p-5 rounded-xl shadow-md hover:shadow-lg transform animation animate-fadeIn min-w-[250px] w-full sm:max-w-md ${lightTheme ? "bg-gray-800 text-white" : "bg-white text-black"
-                        }`}
+                      className={`relative p-3 sm:p-4 lg:p-5 rounded-xl shadow-md hover:shadow-lg transform animation animate-fadeIn w-full ${lightTheme ? "bg-gray-800 text-white" : "bg-white text-black"}`}
                     >
                       {/* Status Badge */}
                       <div
@@ -262,8 +261,7 @@ const FinesPage = () => {
                       <div className="mt-3 flex flex-col sm:flex-row gap-2">
                         <button
                           onClick={() => handleEditClick(fine)}
-                          className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold cursor-pointer ${lightTheme ? "bg-blue-400 text-gray-800" : "bg-blue-500 text-white"
-                            } hover:bg-blue-600 animation w-full sm:w-auto`}
+                          className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold cursor-pointer ${lightTheme ? "bg-blue-400 text-gray-800" : "bg-blue-500 text-white"} hover:bg-blue-600 animation w-full sm:w-auto`}
                         >
                           <PencilIcon className="h-4 w-4" />
                           Edit
@@ -271,8 +269,7 @@ const FinesPage = () => {
                         {fine.status !== "paid" && (
                           <button
                             onClick={() => handleMarkAsPaid(fine.id)}
-                            className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold cursor-pointer ${lightTheme ? "bg-green-400 text-gray-800" : "bg-green-500 text-white"
-                              } hover:bg-green-600 animation w-full sm:w-auto`}
+                            className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold cursor-pointer ${lightTheme ? "bg-green-400 text-gray-800" : "bg-green-500 text-white"} hover:bg-green-600 animation w-full sm:w-auto`}
                           >
                             <CheckCircleIcon className="h-4 w-4" />
                             Mark as Paid

@@ -7,7 +7,7 @@ import Footer from "../components/Footer";
 import ExportButtons from "../components/ExportButtons";
 
 const AccountPage = () => {
-  const { lightTheme, open, csvMember,csvBook} = useContext(AppContext);
+  const { lightTheme, open, csvMember, csvBook } = useContext(AppContext);
   const navigate = useNavigate();
   const [librarianDetails, setLibrarianDetails] = useState({
     email: "",
@@ -30,10 +30,10 @@ const AccountPage = () => {
   // Load initial data from localStorage
   useEffect(() => {
     const storedData = JSON.parse(localStorage.getItem("SS-AC")) || {};
-    const libAccDetail = JSON.parse(localStorage.getItem("currentUser" )) || {}
+    const libAccDetail = JSON.parse(localStorage.getItem("currentUser")) || {};
 
     setLibrarianDetails({
-      email: storedData.email ||  libAccDetail.email || "",
+      email: storedData.email || libAccDetail.email || "",
       name: storedData.name || libAccDetail.name || "",
       dob: storedData.dob || "",
       phone: storedData.phone || "",
@@ -138,31 +138,29 @@ const AccountPage = () => {
   return (
     <section className="flex min-h-screen">
       {/* Sidebar */}
-      <div className="fixed hidden lg:block">
+      <div className={`${open ? "block" : "hidden"} lg:block fixed lg:static w-64 lg:w-auto z-50`}>
         <Sidebar />
       </div>
 
       {/* Navbar + Content */}
       <div className="flex flex-col flex-1 transition-all duration-500">
         <Navbar />
-
-        <section className="flex-1 pt-0 lg:pt-[70px] m-0 lg:m-2.5 transition-all duration-500">
+        <section className="flex-1 lg:pt-[70px] m-0 lg:m-2.5 transition-all duration-500 p-5">
           <div
-            className={`min-h-[calc(100vh-70px)] overflow-y-auto scrollbar-thin overflow-x-hidden pr-0 lg:pr-2 rounded-xl transition-all duration-500 lg:mt-6 ${open ? "lg:ml-68 lg:w-[calc(100%-17rem)]" : "lg:ml-24 lg:w-[calc(100%-6rem)]"
+            className={`h-[87vh] overflow-y-scroll scrollbar-thin overflow-x-hidden pr-0 sm:pr-2 rounded-xl transition-all duration-500 mt-6 ${open ? "lg:ml-5 lg:w-[calc(100%-2rem)]" : "lg:ml-0 lg:w-[calc(100%-0rem)]"
               }`}
           >
             {/* Account Management Heading */}
             <p
-              className={`text-3xl pb-3 mt-5 pl-5 font-bold transition-all duration-300 animation ${lightTheme ? "text-white" : "text-black"
-                }`}
+              className={`${lightTheme ? "text-white" : "text-black"
+                } text-2xl sm:text-3xl pb-3 mt-5 pl-0 sm:pl-5 font-bold animation transition-all duration-500`}
             >
               Account Management
             </p>
-
-            <div className="min-h-full flex flex-col gap-5 p-3 mb-20">
-              <div className="flex flex-col lg:flex-row gap-6 mb-10">
+            <div className="min-h-full flex flex-col gap-4 sm:gap-5 p-3 sm:p-4">
+              <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 mb-8 sm:mb-10">
                 {/* Profile Image */}
-                <div className="relative w-32 h-32 lg:w-40 lg:h-40 flex-shrink-0">
+                <div className="relative w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 flex-shrink-0 mx-auto sm:mx-0">
                   {profileImage && !imageError ? (
                     <img
                       src={profileImage}
@@ -172,7 +170,7 @@ const AccountPage = () => {
                     />
                   ) : (
                     <div
-                      className={`w-full h-full rounded-full flex items-center justify-center text-3xl lg:text-4xl font-bold transition-all duration-300 animation ${lightTheme ? "bg-gray-800 text-white" : "bg-gray-200 text-gray-700"
+                      className={`w-full h-full rounded-full flex items-center justify-center text-2xl sm:text-3xl lg:text-4xl font-bold transition-all duration-300 animation ${lightTheme ? "bg-gray-800 text-white" : "bg-gray-200 text-gray-700"
                         } border-2 border-gray-300`}
                     >
                       {getInitial()}
@@ -188,7 +186,7 @@ const AccountPage = () => {
                     />
                     <label
                       htmlFor="profileImageInput"
-                      className={`rounded-full w-10 h-10 flex items-center justify-center cursor-pointer text-lg transition-all duration-300 animation ${lightTheme ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-blue-600 text-white hover:bg-blue-700"
+                      className={`rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center cursor-pointer text-base sm:text-lg transition-all duration-300 animation ${lightTheme ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-blue-600 text-white hover:bg-blue-700"
                         }`}
                       title="Upload Profile Image"
                     >
@@ -197,7 +195,7 @@ const AccountPage = () => {
                     {profileImage && !imageError && (
                       <button
                         onClick={handleRemoveImage}
-                        className={`rounded-full w-10 h-10 flex items-center justify-center cursor-pointer text-lg transition-all duration-300 animation ${lightTheme ? "bg-red-500 text-white hover:bg-red-600" : "bg-red-600 text-white hover:bg-red-700"
+                        className={`rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center cursor-pointer text-base sm:text-lg transition-all duration-300 animation ${lightTheme ? "bg-red-500 text-white hover:bg-red-600" : "bg-red-600 text-white hover:bg-red-700"
                           }`}
                         title="Remove Profile Image"
                       >
@@ -210,7 +208,7 @@ const AccountPage = () => {
                 {/* Librarian Details */}
                 <div className="flex-1 w-full">
                   <h3
-                    className={`text-xl font-semibold mb-4 transition-all duration-300 animation ${lightTheme ? "text-white" : "text-black"
+                    className={`text-lg sm:text-xl font-semibold mb-4 transition-all duration-300 animation ${lightTheme ? "text-white" : "text-black"
                       }`}
                   >
                     Librarian Details
@@ -228,7 +226,7 @@ const AccountPage = () => {
                         name="email"
                         value={librarianDetails.email}
                         onChange={handleInputChange}
-                        className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
+                        className={`mt-1 w-full px-3 py-2 sm:px-4 sm:py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
                           ? isEditing
                             ? "bg-gray-900 text-white border-gray-600"
                             : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
@@ -252,7 +250,7 @@ const AccountPage = () => {
                         name="name"
                         value={librarianDetails.name}
                         onChange={handleInputChange}
-                        className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
+                        className={`mt-1 w-full px-3 py-2 sm:px-4 sm:py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
                           ? isEditing
                             ? "bg-gray-900 text-white border-gray-600"
                             : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
@@ -276,7 +274,7 @@ const AccountPage = () => {
                         name="dob"
                         value={librarianDetails.dob}
                         onChange={handleInputChange}
-                        className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
+                        className={`mt-1 w-full px-3 py-2 sm:px-4 sm:py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
                           ? isEditing
                             ? "bg-gray-900 text-white border-gray-600"
                             : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
@@ -299,7 +297,7 @@ const AccountPage = () => {
                         name="phone"
                         value={librarianDetails.phone}
                         onChange={handleInputChange}
-                        className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
+                        className={`mt-1 w-full px-3 py-2 sm:px-4 sm:py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
                           ? isEditing
                             ? "bg-gray-900 text-white border-gray-600"
                             : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
@@ -322,7 +320,7 @@ const AccountPage = () => {
                         name="address"
                         value={librarianDetails.address}
                         onChange={handleInputChange}
-                        className={`mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
+                        className={`mt-1 w-full px-3 py-2 sm:px-4 sm:py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 animation ${lightTheme
                           ? isEditing
                             ? "bg-gray-900 text-white border-gray-600"
                             : "bg-gray-800 text-white border-gray-600 cursor-not-allowed"
@@ -338,20 +336,22 @@ const AccountPage = () => {
                   </div>
 
                   {/* Edit/Save Buttons */}
-                  <div className="mt-4 flex gap-3">
+                  <div className="mt-4 sm:mt-6 flex flex-wrap gap-3 sm:gap-4 justify-center sm:justify-start">
                     {isEditing ? (
                       <>
                         <button
                           onClick={handleSave}
-                          className={`w-32 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme ? "bg-green-600 text-white hover:bg-green-700" : "bg-green-500 text-white hover:bg-green-600"
+                          className={`w-full sm:w-32 min-w-[120px] py-2 px-4 sm:px-6 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 focus:ring-2 focus:ring-offset-2 focus:ring-green-500 animation ${lightTheme ? "bg-green-600 text-white hover:bg-green-700" : "bg-green-500 text-white hover:bg-green-600"
                             } cursor-pointer`}
+                          aria-label="Save profile changes"
                         >
                           Save
                         </button>
                         <button
                           onClick={() => setIsEditing(false)}
-                          className={`w-32 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme ? "bg-gray-600 text-white hover:bg-gray-700" : "bg-gray-500 text-white hover:bg-gray-600"
+                          className={`w-full sm:w-32 min-w-[120px] py-2 px-4 sm:px-6 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 animation ${lightTheme ? "bg-gray-600 text-white hover:bg-gray-700" : "bg-gray-500 text-white hover:bg-gray-600"
                             } cursor-pointer`}
+                          aria-label="Cancel profile changes"
                         >
                           Cancel
                         </button>
@@ -359,30 +359,43 @@ const AccountPage = () => {
                     ) : (
                       <button
                         onClick={() => setIsEditing(true)}
-                        className={`w-32 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-blue-600 text-white hover:bg-blue-700"
+                        className={`w-full sm:w-32 min-w-[120px] py-2 px-4 sm:px-6 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 animation ${lightTheme ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-blue-600 text-white hover:bg-blue-700"
                           } cursor-pointer`}
+                        aria-label="Edit profile"
                       >
                         Edit
                       </button>
                     )}
                     <button
                       onClick={handleLogOut}
-                      className={`w-33 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme ? "bg-red-600 text-white hover:bg-red-700" : "bg-red-500 text-white hover:bg-red-600"
+                      className={`w-full sm:w-32 min-w-[120px] py-2 px-4 sm:px-6 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 focus:ring-2 focus:ring-offset-2 focus:ring-red-500 animation ${lightTheme ? "bg-red-600 text-white hover:bg-red-700" : "bg-red-500 text-white hover:bg-red-600"
                         } cursor-pointer`}
+                      aria-label="Log out"
                     >
                       Log Out
                     </button>
-                    {console.log(csvMember)}
-                      <ExportButtons data={csvBook} csvName={"Books"}  fileName="books.csv" />
-                      <ExportButtons data={csvMember} csvName={"Members"}  fileName="members.csv" />
+                    <ExportButtons
+                      data={csvBook}
+                      csvName="Books"
+                      fileName="books.csv"
+                      className={`w-full sm:w-32 min-w-[120px] py-2 px-4 sm:px-6 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 animation ${lightTheme ? "bg-purple-600 text-white hover:bg-purple-700" : "bg-purple-500 text-white hover:bg-purple-600"
+                        } cursor-pointer`}
+                      aria-label="Export books as CSV"
+                    />
+                    <ExportButtons
+                      data={csvMember}
+                      csvName="Members"
+                      fileName="members.csv"
+                      className={`w-full sm:w-32 min-w-[120px] py-2 px-4 sm:px-6 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 animation ${lightTheme ? "bg-purple-600 text-white hover:bg-purple-700" : "bg-purple-500 text-white hover:bg-purple-600"
+                        } cursor-pointer`}
+                      aria-label="Export members as CSV"
+                    />
                   </div>
                 </div>
               </div>
               {/* Footer Section */}
               <Footer />
             </div>
-
-
           </div>
         </section>
       </div>
