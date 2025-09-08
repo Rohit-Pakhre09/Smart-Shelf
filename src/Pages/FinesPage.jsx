@@ -280,9 +280,11 @@ const FinesPage = () => {
                   ))}
                 </div>
               )}
-              {/* Footer Section - Only shown when not loading */}
-              {!loading && <Footer />}
+
             </div>
+
+            {/* Footer Section - Only shown when not loading */}
+            {!loading && <Footer />}
 
             {/* Edit Modal */}
             {editingFine && (
