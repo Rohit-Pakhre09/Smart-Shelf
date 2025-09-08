@@ -157,66 +157,66 @@ const ReservedBooks = () => {
                         </p>
                         <div className="min-h-full flex flex-col gap-5 p-3">
                             {/* Reserve Book Form */}
-                            <div className={`p-4 rounded-lg shadow-md ${lightTheme ? "bg-gray-800" : "bg-white"}`}>
+                            <div className={`p-4 rounded-lg shadow-md ${lightTheme ? "bg-gray-800" : "bg-neutral-50"} flex flex-col items-center justify-center animation`}>
                                 <h2 className={`${lightTheme ? "text-white" : "text-black"} text-xl font-semibold mb-2`}>{isEditing ? "Edit Reservation" : "Reserve a Book"}</h2>
                                 <p className={`${lightTheme ? "text-gray-300" : "text-gray-600"} text-base mb-4`}>As an admin, {isEditing ? "edit an existing reservation" : "reserve an existing book from the library catalog"}.</p>
-                                <form onSubmit={handleRequestReservation} className="flex flex-col gap-4 max-w-lg">
-                                    <div className="flex flex-col">
-                                        <label className={`${lightTheme ? "text-gray-300" : "text-gray-700"} text-base mb-1`}>Reservation ID (Required)</label>
+                                <form onSubmit={handleRequestReservation} className="flex flex-col gap-4 max-w-lg w-full">
+                                    <div className="flex flex-col flex-1">
+                                        <label className={`${lightTheme ? "text-gray-300" : "text-gray-700"} text-base mb-1 animation`}>Reservation ID (Required)</label>
                                         <input
                                             type="text"
                                             name="id"
                                             value={formData.id}
                                             onChange={handleFormChange}
-                                            className={`w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"} focus:outline-none focus:ring-2 focus:ring-purple-500 text-base ${isEditing ? "bg-gray-400 cursor-not-allowed" : ""}`}
+                                            className={`w-full p-2 rounded-md border animation ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"} focus:outline-none focus:ring-2 focus:ring-purple-500 text-base ${isEditing ? "bg-gray-400 cursor-not-allowed" : ""}`}
                                             aria-label="Reservation ID"
                                             placeholder="e.g., R001"
                                             disabled={isEditing}
                                         />
                                     </div>
-                                    <div className="flex flex-col">
-                                        <label className={`${lightTheme ? "text-gray-300" : "text-gray-700"} text-base mb-1`}>Book Title (Required)</label>
+                                    <div className="flex flex-col flex-1">
+                                        <label className={`${lightTheme ? "text-gray-300" : "text-gray-700"} animation text-base mb-1`}>Book Title (Required)</label>
                                         <input
                                             type="text"
                                             name="title"
                                             value={formData.title}
                                             onChange={handleFormChange}
-                                            className={`w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"} focus:outline-none focus:ring-2 focus:ring-purple-500 text-base`}
+                                            className={`w-full p-2 rounded-md border animation ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"} focus:outline-none focus:ring-2 focus:ring-purple-500 text-base`}
                                             aria-label="Book Title"
                                             placeholder="e.g., Wuthering Heights"
                                         />
                                     </div>
-                                    <div className="flex flex-col">
-                                        <label className={`${lightTheme ? "text-gray-300" : "text-gray-700"} text-base mb-1`}>Author Name (Required)</label>
+                                    <div className="flex flex-col flex-1">
+                                        <label className={`${lightTheme ? "text-gray-300" : "text-gray-700"} animation text-base mb-1`}>Author Name (Required)</label>
                                         <input
                                             type="text"
                                             name="author"
                                             value={formData.author}
                                             onChange={handleFormChange}
-                                            className={`w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"} focus:outline-none focus:ring-2 focus:ring-purple-500 text-base`}
+                                            className={`w-full p-2 rounded-md border animation ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"} focus:outline-none focus:ring-2 focus:ring-purple-500 text-base`}
                                             aria-label="Author Name"
                                             placeholder="e.g., Emily Brontë"
                                         />
                                     </div>
-                                    <div className="flex flex-col">
-                                        <label className={`${lightTheme ? "text-gray-300" : "text-gray-700"} text-base mb-1`}>ISBN (Required)</label>
+                                    <div className="flex flex-col flex-1">
+                                        <label className={`${lightTheme ? "text-gray-300" : "text-gray-700"} text-base mb-1 animation`}>ISBN (Required)</label>
                                         <input
                                             type="text"
                                             name="isbn"
                                             value={formData.isbn}
                                             onChange={handleFormChange}
-                                            className={`w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"} focus:outline-none focus:ring-2 focus:ring-purple-500 text-base`}
+                                            className={`w-full p-2 rounded-md border animation ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"} focus:outline-none focus:ring-2 focus:ring-purple-500 text-base`}
                                             aria-label="ISBN"
                                             placeholder="e.g., 9780141439556"
                                         />
                                     </div>
-                                    <div className="flex flex-col">
-                                        <label className={`${lightTheme ? "text-gray-300" : "text-gray-700"} text-base mb-1`}>Status (Required)</label>
+                                    <div className="flex flex-col flex-1">
+                                        <label className={`${lightTheme ? "text-gray-300" : "text-gray-700"} text-base mb-1 animation`}>Status (Required)</label>
                                         <select
                                             name="status"
                                             value={formData.status}
                                             onChange={handleFormChange}
-                                            className={`w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"} focus:outline-none focus:ring-2 focus:ring-purple-500 text-base`}
+                                            className={`w-full p-2 rounded-md border animation ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"} focus:outline-none focus:ring-2 focus:ring-purple-500 text-base`}
                                             aria-label="Select Status"
                                         >
                                             <option value="">Select status</option>
@@ -267,7 +267,7 @@ const ReservedBooks = () => {
                                     {reservations.map((reservation) => (
                                         <div
                                             key={reservation.id}
-                                            className={`p-4 rounded-lg shadow-md ${lightTheme ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"} border transition-all duration-300 hover:shadow-lg`}
+                                            className={`p-4 rounded-lg shadow-md animation ${lightTheme ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"} border transition-all duration-300 hover:shadow-lg`}
                                             aria-label={`Reservation ${reservation.id}`}
                                         >
                                             <h3 className="text-xl font-semibold mb-2 truncate">{reservation.title}</h3>
