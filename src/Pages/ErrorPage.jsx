@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext,useEffect } from "react";
 import errorImg from "../assets/404.svg"
 import { AppContext } from "../contexts/AppProvider";
 import { Link } from "react-router-dom";

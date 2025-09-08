@@ -38,11 +38,13 @@ ChartJS.register(
 const membersUrl = "https://smart-shelf-server-qm2u.onrender.com/members";
 
 const DashBoard = () => {
-  const { lightTheme, open } = useContext(AppContext);
+  const { lightTheme, open,setCsvBook ,setCsvMember} = useContext(AppContext);
   const dispatch = useDispatch();
   const { books, issuedBooks, loading, error } = useSelector((state) => state.books);
   const [members, setMembers] = useState([]);
   const [membersError, setMembersError] = useState(null);
+
+
 
   // Fetch books and issued books from Redux
   useEffect(() => {
@@ -64,6 +66,8 @@ const DashBoard = () => {
         const res = await axios.get(membersUrl);
         setMembers(res.data);
         setMembersError(null);
+        setCsvMember(members)
+
       } catch (err) {
         console.error("Error fetching members:", err);
         setMembersError("Failed to fetch members. Please try again.");
@@ -71,6 +75,7 @@ const DashBoard = () => {
     };
     fetchMembers();
   }, []);
+
 
   // Title
   useEffect(() => {

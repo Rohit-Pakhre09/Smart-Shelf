@@ -4,9 +4,10 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { AppContext } from "../contexts/AppProvider";
 import Footer from "../components/Footer";
+import ExportButtons from "../components/ExportButtons";
 
 const AccountPage = () => {
-  const { lightTheme, open } = useContext(AppContext);
+  const { lightTheme, open, csvMember,csvBook} = useContext(AppContext);
   const navigate = useNavigate();
   const [librarianDetails, setLibrarianDetails] = useState({
     email: "",
@@ -29,9 +30,11 @@ const AccountPage = () => {
   // Load initial data from localStorage
   useEffect(() => {
     const storedData = JSON.parse(localStorage.getItem("SS-AC")) || {};
+    const libAccDetail = JSON.parse(localStorage.getItem("currentUser" )) || {}
+
     setLibrarianDetails({
-      email: storedData.email || localStorage.getItem("email") || "",
-      name: storedData.name || "",
+      email: storedData.email ||  libAccDetail.email || "",
+      name: storedData.name || libAccDetail.name || "",
       dob: storedData.dob || "",
       phone: storedData.phone || "",
       address: storedData.address || "",
@@ -121,8 +124,8 @@ const AccountPage = () => {
   // Handle logout
   const handleLogOut = () => {
     localStorage.removeItem("SS-AC");
-    localStorage.removeItem("token");
-    localStorage.removeItem("email");
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("currentUser");
     navigate("/", { replace: true });
     window.location.reload();
   };
@@ -364,11 +367,14 @@ const AccountPage = () => {
                     )}
                     <button
                       onClick={handleLogOut}
-                      className={`w-32 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme ? "bg-red-600 text-white hover:bg-red-700" : "bg-red-500 text-white hover:bg-red-600"
+                      className={`w-33 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 animation ${lightTheme ? "bg-red-600 text-white hover:bg-red-700" : "bg-red-500 text-white hover:bg-red-600"
                         } cursor-pointer`}
                     >
                       Log Out
                     </button>
+                    {console.log(csvMember)}
+                      <ExportButtons data={[]} csvName={csvBook}  fileName="books.csv" />
+                      <ExportButtons data={[]} csvName={csvMember}  fileName="books.csv" />
                   </div>
                 </div>
               </div>

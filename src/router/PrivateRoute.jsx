@@ -1,18 +1,14 @@
-import { useState, useEffect } from 'react';
+
+
+
 import { Navigate } from 'react-router-dom';
 
 function PrivateRoute({ children }) {
-    const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+    const isAuthenticate = localStorage.getItem('isAuthenticated');
 
-    useEffect(() => {
-        const handleStorageChange = () => {
-            setIsAuthenticated(!!localStorage.getItem('token'));
-        };
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
-    }, []);
+   
 
-    if (!isAuthenticated) {
+    if (!isAuthenticate) {
         return <Navigate to="/" replace />;
     }
     return children;
