@@ -373,8 +373,8 @@ const AccountPage = () => {
                       Log Out
                     </button>
                     {console.log(csvMember)}
-                      <ExportButtons data={[]} csvName={csvBook}  fileName="books.csv" />
-                      <ExportButtons data={[]} csvName={csvMember}  fileName="books.csv" />
+                      <ExportButtons data={csvBook} csvName={"Books"}  fileName="books.csv" />
+                      <ExportButtons data={csvMember} csvName={"Members"}  fileName="books.csv" />
                   </div>
                 </div>
               </div>
