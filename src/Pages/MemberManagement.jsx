@@ -24,7 +24,7 @@ import {
 import membersFallback from "../assets/membersPageFallback.svg";
 
 const MemberManagement = () => {
-  const { lightTheme, open } = useContext(AppContext);
+  const { lightTheme, open, setCsvMember } = useContext(AppContext);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,6 +58,7 @@ const MemberManagement = () => {
       .then((data) => {
         setMembers(Array.isArray(data) ? data : []);
         setLoading(false);
+        setCsvMember(members)
       })
       .catch((err) => {
         console.error("Error fetching members:", err);
