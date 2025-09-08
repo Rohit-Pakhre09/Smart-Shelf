@@ -9,15 +9,17 @@ import FinePage from "../Pages/FinesPage";
 import ErrorPage from "../Pages/ErrorPage";
 import AccountPage from "../Pages/AccountPage";
 import PrivateRoute from "./PrivateRoute";
-import  SignUpPage from "../Pages/SignupPage"
+import SignUpPage from "../Pages/SignupPage"
 import IssuedBooks from "../Pages/IssuedBooks"
+import ReservedBooks from "../Pages/ReservedBooks";
 const paths = [
   { path: "/dashboard", element: <DashBoard /> },
   { path: "/books", element: <BookManagement /> },
   { path: "/members", element: <MemberManagement /> },
-    { path: '/issuedBooks', element: <IssuedBooks /> },
+  { path: '/issuedBooks', element: <IssuedBooks /> },
   { path: "/fines", element: <FinePage /> },
   { path: "/account", element: <AccountPage /> },
+  { path: "/reserved", element: <ReservedBooks /> },
   { path: "*", element: <ErrorPage /> }
 ];
 
@@ -46,7 +48,7 @@ const AllRoutes = () => {
       />
       <Route
         path="/signup"
-        element={<SignUpPage  />}
+        element={<SignUpPage />}
       />
 
       {/* Protected routes */}
