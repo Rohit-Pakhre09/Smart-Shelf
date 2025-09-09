@@ -178,7 +178,7 @@ const FinesPage = () => {
               Fines Management
             </p>
 
-            <div className="min-h-full flex flex-col gap-5 p-3">
+            <div className={`min-h-full flex flex-col gap-5 p-3`}>
               {loading ? (
                 <div className="flex justify-center items-center min-h-[50vh] w-full">
                   <span className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
@@ -198,230 +198,229 @@ const FinesPage = () => {
                   No fines found.
                 </p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 px-2">
-                  {fines.map((fine) => (
-                    <div
-                      key={fine.id}
-                      className={`relative p-3 sm:p-4 lg:p-5 rounded-xl shadow-md hover:shadow-lg transform animation animate-fadeIn min-w-[250px] w-full sm:max-w-md ${lightTheme ? "bg-gray-800 text-white" : "bg-white text-black"
-                        }`}
-                    >
-                      {/* Status Badge */}
-                      <div
-                        className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-semibold ${fine.status === "paid"
-                          ? lightTheme
-                            ? "bg-green-400 text-gray-800"
-                            : "bg-green-500 text-white"
-                          : lightTheme
-                            ? "bg-red-400 text-gray-800"
-                            : "bg-red-500 text-white"
-                          }`}
-                      >
-                        {fine.status.charAt(0).toUpperCase() + fine.status.slice(1)}
-                      </div>
-
-                      {/* Fine Details */}
-                      <h3 className="text-base sm:text-lg font-bold mb-2 truncate">{fine.id}</h3>
-                      <div className="space-y-1.5 text-xs sm:text-sm lg:text-base">
-                        <p className="truncate">
-                          <span className="font-medium">Member:</span> {fine.memberId}
-                        </p>
-                        <p className="truncate">
-                          <span className="font-medium">Book:</span> {fine.bookId}
-                        </p>
-                        <p>
-                          <span className="font-medium">Amount:</span> ₹{fine.amount}
-                        </p>
-                        <p className="truncate">
-                          <span className="font-medium">Reason:</span> {fine.reason}
-                        </p>
-                        <p>
-                          <span className="font-medium">Calculated:</span>{" "}
-                          {new Date(fine.calculatedOn).toLocaleDateString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </p>
-                        <p className="truncate">
-                          <span className="font-medium">Payment Method:</span>{" "}
-                          {fine.paymentMethod || "N/A"}
-                        </p>
-                        <p>
-                          <span className="font-medium">Paid On:</span>{" "}
-                          {fine.paymentDate
-                            ? new Date(fine.paymentDate).toLocaleDateString("en-IN", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })
-                            : "N/A"}
-                        </p>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="mt-3 flex flex-col sm:flex-row gap-2">
-                        <button
-                          onClick={() => handleEditClick(fine)}
-                          className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold cursor-pointer ${lightTheme ? "bg-blue-400 text-gray-800" : "bg-blue-500 text-white"
-                            } hover:bg-blue-600 animation w-full sm:w-auto`}
-                        >
-                          <PencilIcon className="h-4 w-4" />
-                          Edit
-                        </button>
-                        {fine.status !== "paid" && (
-                          <button
-                            onClick={() => handleMarkAsPaid(fine.id)}
-                            className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold cursor-pointer ${lightTheme ? "bg-green-400 text-gray-800" : "bg-green-500 text-white"
-                              } hover:bg-green-600 animation w-full sm:w-auto`}
-                          >
-                            <CheckCircleIcon className="h-4 w-4" />
-                            Mark as Paid
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {/* Footer Section - Only shown when not loading */}
-              {!loading && <Footer />}
-            </div>
-
-            {/* Edit Modal */}
-            {editingFine && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 px-5 py-4 justify-between ${lightTheme ? " bg-gray-900" : "bg-neutral-50"} animation rounded-lg`}>
+              {fines.map((fine) => (
                 <div
-                  className={`p-6 rounded-xl shadow-lg max-w-md w-full ${lightTheme ? "bg-gray-800 text-white" : "bg-white text-black"
-                    }`}
+                  key={fine.id}
+                  className={`relative p-3 sm:p-4 lg:p-5 rounded-xl shadow-md hover:shadow-lg transform animation animate-fadeIn w-full ${lightTheme ? "bg-gray-800 text-white" : "bg-white text-black"}`}
                 >
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold">Edit Fine</h2>
-                    <button className="cursor-pointer" onClick={handleCancelEdit}>
-                      <XMarkIcon className="h-6 w-6" />
+                  {/* Status Badge */}
+                  <div
+                    className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-semibold ${fine.status === "paid"
+                      ? lightTheme
+                        ? "bg-green-400 text-gray-800"
+                        : "bg-green-500 text-white"
+                      : lightTheme
+                        ? "bg-red-400 text-gray-800"
+                        : "bg-red-500 text-white"
+                      }`}
+                  >
+                    {fine.status.charAt(0).toUpperCase() + fine.status.slice(1)}
+                  </div>
+
+                  {/* Fine Details */}
+                  <h3 className="text-base sm:text-lg font-bold mb-2 truncate">{fine.id}</h3>
+                  <div className="space-y-1.5 text-xs sm:text-sm lg:text-base">
+                    <p className="truncate">
+                      <span className="font-medium">Member:</span> {fine.memberId}
+                    </p>
+                    <p className="truncate">
+                      <span className="font-medium">Book:</span> {fine.bookId}
+                    </p>
+                    <p>
+                      <span className="font-medium">Amount:</span> ₹{fine.amount}
+                    </p>
+                    <p className="truncate">
+                      <span className="font-medium">Reason:</span> {fine.reason}
+                    </p>
+                    <p>
+                      <span className="font-medium">Calculated:</span>{" "}
+                      {new Date(fine.calculatedOn).toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
+                    <p className="truncate">
+                      <span className="font-medium">Payment Method:</span>{" "}
+                      {fine.paymentMethod || "N/A"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Paid On:</span>{" "}
+                      {fine.paymentDate
+                        ? new Date(fine.paymentDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                        : "N/A"}
+                    </p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                    <button
+                      onClick={() => handleEditClick(fine)}
+                      className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold cursor-pointer ${lightTheme ? "bg-blue-400 text-gray-800" : "bg-blue-500 text-white"} hover:bg-blue-600 animation w-full sm:w-auto`}
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                      Edit
+                    </button>
+                    {fine.status !== "paid" && (
+                      <button
+                        onClick={() => handleMarkAsPaid(fine.id)}
+                        className={`flex items-center justify-center gap-1 px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold cursor-pointer ${lightTheme ? "bg-green-400 text-gray-800" : "bg-green-500 text-white"} hover:bg-green-600 animation w-full sm:w-auto`}
+                      >
+                        <CheckCircleIcon className="h-4 w-4" />
+                        Mark as Paid
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+              )}
+
+          </div>
+
+          {/* Footer Section - Only shown when not loading */}
+          {!loading && <Footer />}
+
+          {/* Edit Modal */}
+          {editingFine && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div
+                className={`p-6 rounded-xl shadow-lg max-w-md w-full ${lightTheme ? "bg-gray-800 text-white" : "bg-white text-black"
+                  }`}
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold">Edit Fine</h2>
+                  <button className="cursor-pointer" onClick={handleCancelEdit}>
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
+                </div>
+                <form onSubmit={handleEditSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium">Member ID</label>
+                    <input
+                      type="text"
+                      name="memberId"
+                      value={editForm.memberId}
+                      onChange={handleInputChange}
+                      className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                        }`}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Book ID</label>
+                    <input
+                      type="text"
+                      name="bookId"
+                      value={editForm.bookId}
+                      onChange={handleInputChange}
+                      className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                        }`}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Amount</label>
+                    <input
+                      type="number"
+                      name="amount"
+                      value={editForm.amount}
+                      onChange={handleInputChange}
+                      className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                        }`}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Status</label>
+                    <select
+                      name="status"
+                      value={editForm.status}
+                      onChange={handleInputChange}
+                      className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                        }`}
+                      required
+                    >
+                      <option value="paid">Paid</option>
+                      <option value="unpaid">Unpaid</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Reason</label>
+                    <input
+                      type="text"
+                      name="reason"
+                      value={editForm.reason}
+                      onChange={handleInputChange}
+                      className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                        }`}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Calculated On</label>
+                    <input
+                      type="date"
+                      name="calculatedOn"
+                      value={editForm.calculatedOn}
+                      onChange={handleInputChange}
+                      className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                        }`}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Payment Method</label>
+                    <input
+                      type="text"
+                      name="paymentMethod"
+                      value={editForm.paymentMethod}
+                      onChange={handleInputChange}
+                      className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                        }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium">Payment Date</label>
+                    <input
+                      type="date"
+                      name="paymentDate"
+                      value={editForm.paymentDate}
+                      onChange={handleInputChange}
+                      className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                        }`}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className={`flex-1 px-3 py-1.5 rounded-md text-sm font-semibold cursor-pointer ${lightTheme ? "bg-blue-400 text-gray-800" : "bg-blue-500 text-white"
+                        } hover:bg-blue-600 animation cursor-pointer`}
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className={`flex-1 px-3 py-1.5 rounded-md text-sm font-semibold cursor-pointer ${lightTheme ? "bg-gray-400 text-gray-800" : "bg-gray-500 text-white"
+                        } hover:bg-gray-600 animation cursor-pointer`}
+                    >
+                      Cancel
                     </button>
                   </div>
-                  <form onSubmit={handleEditSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium">Member ID</label>
-                      <input
-                        type="text"
-                        name="memberId"
-                        value={editForm.memberId}
-                        onChange={handleInputChange}
-                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                          }`}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">Book ID</label>
-                      <input
-                        type="text"
-                        name="bookId"
-                        value={editForm.bookId}
-                        onChange={handleInputChange}
-                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                          }`}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">Amount</label>
-                      <input
-                        type="number"
-                        name="amount"
-                        value={editForm.amount}
-                        onChange={handleInputChange}
-                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                          }`}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">Status</label>
-                      <select
-                        name="status"
-                        value={editForm.status}
-                        onChange={handleInputChange}
-                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                          }`}
-                        required
-                      >
-                        <option value="paid">Paid</option>
-                        <option value="unpaid">Unpaid</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">Reason</label>
-                      <input
-                        type="text"
-                        name="reason"
-                        value={editForm.reason}
-                        onChange={handleInputChange}
-                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                          }`}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">Calculated On</label>
-                      <input
-                        type="date"
-                        name="calculatedOn"
-                        value={editForm.calculatedOn}
-                        onChange={handleInputChange}
-                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                          }`}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">Payment Method</label>
-                      <input
-                        type="text"
-                        name="paymentMethod"
-                        value={editForm.paymentMethod}
-                        onChange={handleInputChange}
-                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                          }`}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium">Payment Date</label>
-                      <input
-                        type="date"
-                        name="paymentDate"
-                        value={editForm.paymentDate}
-                        onChange={handleInputChange}
-                        className={`mt-1 w-full p-2 rounded-md border ${lightTheme ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                          }`}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        className={`flex-1 px-3 py-1.5 rounded-md text-sm font-semibold cursor-pointer ${lightTheme ? "bg-blue-400 text-gray-800" : "bg-blue-500 text-white"
-                          } hover:bg-blue-600 animation cursor-pointer`}
-                      >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleCancelEdit}
-                        className={`flex-1 px-3 py-1.5 rounded-md text-sm font-semibold cursor-pointer ${lightTheme ? "bg-gray-400 text-gray-800" : "bg-gray-500 text-white"
-                          } hover:bg-gray-600 animation cursor-pointer`}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                </div>
+                </form>
               </div>
-            )}
-          </div>
-        </section>
+            </div>
+          )}
       </div>
     </section>
+      </div >
+    </section >
   );
 };
 
