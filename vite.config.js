@@ -6,11 +6,11 @@ import path from 'path';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
-    outDir: 'dist', // Explicitly set output directory for Vercel
+    outDir: 'dist', 
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'), // Alias for src directory
+      '@': path.resolve(__dirname, './src'), 
     },
   },
 });
